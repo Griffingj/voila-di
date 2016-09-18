@@ -19,9 +19,4 @@ cache:
   directories:
      - ./node_modules
 
-env:
-  global:
-install:
-before_script:
-script:
-after_script:
+

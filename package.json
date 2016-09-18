@@ -10,7 +10,8 @@
   "scripts": {
     "test": "lab",
     "lint": "eslint src",
-    "start": "babel-node ./src/example/simpleExamples.js",
+    "test-cov": "lab --coverage",
+    "report-cov": "lab --coverage -r lcov | codeclimate-test-reporter",
     "prepublish": "npm run build",
     "build": "babel src --out-dir build",
     "validate": "npm ls"
@@ -39,9 +40,10 @@
   },
   "pre-commit": [
     "test",
+    "lint",
     "validate"
   ],
   "dependencies": {
-    "sinon": "^1.17.5"
+    "mutable-proxy": "^0.1.3"
   }
 }

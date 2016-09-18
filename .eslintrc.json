@@ -8,12 +8,13 @@
   },
   "rules": {
     "comma-dangle": 0,
+    "arrow-body-style": 0,
     "max-len": [
       "error",
       {
         "code": 100,
         "tabWidth": 2,
-        "ignoreTrailingComments": true,
+        "ignoreComments": true,
         "ignoreUrls": true
       }
     ],

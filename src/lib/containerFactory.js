@@ -1,10 +1,11 @@
-import validateRegistration    from './validation/validateRegistration';
-import placeholderProxyFactory from './utility/placeholderProxyFactory';
+import mutableProxyFactory  from 'mutable-proxy';
+import validateRegistration from './validation/validateRegistration';
+
 
 export default function containerFactory() {
   const registry = new Map();
 
-  function fulfill(dependencies, registration) {
+  function assemble(dependencies, registration) {
     const {
       factory,
       factoryWithCallback,
@@ -36,6 +37,7 @@ export default function containerFactory() {
       return factoryResolvePromise(...dependencies);
     }
 
+    // Must be constructorFunc as register assertions will enforce this
     try {
       /* eslint new-cap: 0 */
       return new constructorFunc(...dependencies);
@@ -44,7 +46,7 @@ export default function containerFactory() {
     }
   }
 
-  function resolveChildren(key, circularRefs, ancestry = []) {
+  function resolveStep(key, circularRefs, ancestry) {
     const registration = registry.get(key);
 
     if (!registration) {
@@ -54,44 +56,33 @@ export default function containerFactory() {
 
     const {
       value,
-      requirements = [],
-      resolver,
+      requirements = []
     } = registration;
-
-    // If some other call to resolveChildren had already started the
-    // resolution of this key, return that promise
-    if (resolver) {
-      return resolver;
-    }
 
     if (value) {
       return Promise.resolve(value);
     }
 
     // Resolve the dependencies of this key
-    const dependencyPromises = requirements.map(requirement => {
+    const depPromises = requirements.map(requirement => {
       // Return a proxy for circular dependencies, this will be patched after
       // the dependencies are resolved, otherwise the dependencies would never
       // resolve
-      const isCircular = ancestry.indexOf(requirement) !== -1;
+      const isCircular = ancestry.has(requirement);
 
       if (isCircular) {
-        const { proxy, setTarget } = mutableProxyFactory();
+        const { setTarget, proxy } = mutableProxyFactory();
         circularRefs.set(requirement, setTarget);
         return proxy;
       }
-      return resolveChildren(requirement, circularRefs, [...ancestry, key]);
+      ancestry.set(key, null);
+      return resolveStep(requirement, circularRefs, ancestry);
     });
 
-    const valuePromise = Promise.all(dependencyPromises)
-      .then(dependencies => fulfill(dependencies, registration));
+    const valuePromise = Promise.all(depPromises)
+      .then(deps => assemble(deps, registration));
 
-    // Add the promise to the registry's registration so that other async
-    // calls to resolve this key reuse this promise
-    registry.set(key, Object.assign(registration, {
-      resolver: valuePromise
-    }));
-
+    ancestry.set(key, valuePromise);
     return valuePromise;
   }
 
@@ -103,15 +94,19 @@ export default function containerFactory() {
     },
     resolve(key) {
       const circularRefs = new Map();
+      const ancestry = new Map();
 
-      return resolveChildren(key, circularRefs)
+      return resolveStep(key, circularRefs, ancestry)
         .then(value => {
-          circularRefs.forEach((setProxyTarget, proxyKey) => {
-            registry
-              .get(proxyKey).resolver
-              .then(setProxyTarget);
+          const patchPromises = [];
+
+          circularRefs.forEach((setTarget, proxyKey) => {
+            const valuePromise = ancestry
+              .get(proxyKey)
+              .then(setTarget);
+            patchPromises.push(valuePromise);
           });
-          return value;
+          return Promise.all(patchPromises).then(() => value);
         });
     },
     delete(key) {

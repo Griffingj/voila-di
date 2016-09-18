@@ -3,7 +3,7 @@ module.exports = {
   shuffle: true,
   leaks: false,
   verbose: true,
-  coverage: true,
+  sourcemaps: true,
   reporter: 'console',
   'coverage-path': './src',
   transform: './src/test/transform.js',
