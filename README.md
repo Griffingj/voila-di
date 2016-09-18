@@ -1,4 +1,7 @@
 # Voilà
+[![Build Status](https://travis-ci.org/Griffingj/voila.svg?branch=master)](https://travis-ci.org/Griffingj/voila)
+[![Code Climate](https://codeclimate.com/github/Griffingj/voila/badges/gpa.svg)](https://codeclimate.com/github/Griffingj/voila)
+[![Test Coverage](https://codeclimate.com/github/Griffingj/voila/badges/coverage.svg)](https://codeclimate.com/github/Griffingj/voila/coverage)
 
 #####Basic Usage
 Create the dependency injection container
