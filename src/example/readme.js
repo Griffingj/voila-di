@@ -4,10 +4,7 @@ import containerFactory from '../lib/containerFactory';
 const container = containerFactory();
 
 // Store a value directly
-container.register({
-  key: 'a',
-  value: 'apple'
-});
+container.value('a', 'apple');
 
 
 // Store the value returned from a factory function
@@ -18,11 +15,7 @@ function bananaFactory() {
   // The value other components may depend on
   return banana;
 }
-
-container.register({
-  key: 'b',
-  factory: bananaFactory
-});
+container.factory('b', bananaFactory);
 
 
 // Store the value returned from using the new operator on a constructor function
@@ -35,12 +28,7 @@ Coconut.prototype = {
     return `I am a coconut and contain a ${this.dependency}`;
   }
 };
-
-container.register({
-  key: 'c',
-  constructorFunc: Coconut,
-  requirements: ['a']
-});
+container.constructorFunc('c', Coconut, ['a']);
 
 
 // Store the value from a factory which takes a node-style callback as the last
@@ -54,12 +42,8 @@ function formatterFactory(a, b, c, callback) {
   };
   setTimeout(() => callback(null, value), 500);
 }
-
-container.register({
-  key: 'formatter',
-  factoryWithCallback: formatterFactory,
-  requirements: ['a', 'b', 'c']
-});
+formatterFactory.withCallback = true;
+container.factory('formatter', formatterFactory, ['a', 'b', 'c']);
 
 
 // Store the resolved value from a factory that returns a promise, some clearer
@@ -76,22 +60,12 @@ function printerFactory(formatter, logable) {
     }, 500);
   });
 }
-
-container.register({
-  key: 'logger',
-  value: console
-});
-
-container.register({
-  key: 'printer',
-  factoryResolvePromise: printerFactory,
-  requirements: ['formatter', 'logger']
-});
-
+printerFactory.resolvePromise = true;
+container.value('logger', console);
+container.factory('printer', printerFactory, ['formatter', 'logger']);
 
 // Resolve dependencies lazily
 container
   .resolve('printer')
-  .then(printer => printer.print())
-  .catch(error => console.log(error.stack));
+  .then(printer => printer.print());
 // => I am a formatter and I depend on these "{"a":"apple","b":{"source":"banana"},"c":{"dependency":"apple"}}", c.message() is "I am a coconut and contain a apple"

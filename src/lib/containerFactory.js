@@ -1,7 +1,6 @@
 import mutableProxyFactory  from 'mutable-proxy';
 import validateRegistration from './validation/validateRegistration';
 
-
 export default function containerFactory() {
   const registry = new Map();
 
@@ -65,9 +64,9 @@ export default function containerFactory() {
 
     // Resolve the dependencies of this key
     const depPromises = requirements.map(requirement => {
-      // Return a proxy for circular dependencies, this will be patched after
-      // the dependencies are resolved, otherwise the dependencies would never
-      // resolve
+      // Return a proxy for circular dependencies, this will allow the
+      // dependencies to resolve, and any proxys will be updated afterward to
+      // forward to the correct objects
       const isCircular = ancestry.has(requirement);
 
       if (isCircular) {
@@ -87,6 +86,24 @@ export default function containerFactory() {
   }
 
   return {
+    value(key, value) {
+      return this.register({ key, value });
+    },
+    factory(key, factory, requirements) {
+      const options = { key, requirements };
+
+      if (factory.withCallback) {
+        Object.assign(options, { factoryWithCallback: factory });
+      } else if (factory.resolvePromise) {
+        Object.assign(options, { factoryResolvePromise: factory });
+      } else {
+        Object.assign(options, { factory });
+      }
+      return this.register(options);
+    },
+    constructorFunc(key, constructorFunc, requirements) {
+      return this.register({ key, constructorFunc, requirements });
+    },
     register(registration) {
       validateRegistration(registration);
       registry.set(registration.key, registration);
@@ -108,13 +125,6 @@ export default function containerFactory() {
           });
           return Promise.all(patchPromises).then(() => value);
         });
-    },
-    delete(key) {
-      // TODO Warn if other's depend on this
-      return registry.delete(key);
-    },
-    toJson() {
-      return JSON.stringifiy(registry);
     }
   };
 }
