@@ -6,8 +6,8 @@ module.exports = {
   sourcemaps: true,
   reporter: 'console',
   'coverage-path': './src',
-  transform: './src/test/transform.js',
+  transform: './test/transform.js',
   paths: [
-    'src/test'
+    'test'
   ]
 };

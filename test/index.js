@@ -1,6 +1,6 @@
 import expect from 'expect';
 import Lab    from 'lab';
-import voila  from '../index';
+import voila  from '../src/index';
 
 const lab = exports.lab = Lab.script();
 const { describe, it, beforeEach } = lab;
