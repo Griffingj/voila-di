@@ -30,7 +30,7 @@ export default function containerFactory(options = {}) {
       const isCircular = ancestry.indexOf(requirement) !== -1;
 
       if (isCircular) {
-        const { setTarget, proxy } = mutableProxyFactory();
+        const { proxy, setTarget } = mutableProxyFactory();
         circularMeta.set(requirement, setTarget);
         return proxy;
       }
@@ -78,8 +78,8 @@ export default function containerFactory(options = {}) {
       const circularMeta = new Map();
 
       return resolveStep(key, circularMeta).then(value => {
-        circularMeta.forEach((setTarget, proxyKey) => {
-          setTarget(resolved.get(proxyKey));
+        circularMeta.forEach((setProxyTarget, proxyKey) => {
+          setProxyTarget(resolved.get(proxyKey));
         });
         return value;
       });
