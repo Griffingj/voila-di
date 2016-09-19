@@ -1,5 +1,5 @@
 /* eslint no-console: 0 */
-import containerFactory from '../lib/containerFactory';
+import containerFactory from '../lib/container/containerFactory';
 
 const container = containerFactory();
 
@@ -67,7 +67,8 @@ container.factory('printer', printerFactory, ['formatter', 'logger']);
 // Resolve dependencies lazily
 container
   .resolve('printer')
-  .then(printer => printer.print());
+  .then(printer => printer.print())
+  .catch(error => console.log(error));
 // => I am a formatter and I depend on these "{"a":"apple","b":{"source":"banana"},"c":{"dependency":"apple"}}", c.message() is "I am a coconut and contain a apple"
 
 // Resolve circular dependencies
