@@ -69,3 +69,32 @@ container
   .resolve('printer')
   .then(printer => printer.print());
 // => I am a formatter and I depend on these "{"a":"apple","b":{"source":"banana"},"c":{"dependency":"apple"}}", c.message() is "I am a coconut and contain a apple"
+
+// Resolve circular dependencies
+container.factory('x', (y) => {
+  return {
+    message() {
+      return `x["${y.forX()}"]`;
+    },
+    forY() {
+      return 'x.forY';
+    }
+  };
+}, ['y']);
+
+container.factory('y', (x) => {
+  return {
+    message() {
+      return `y["${x.forY()}"]`;
+    },
+    forX() {
+      return 'y.forX';
+    }
+  };
+},
+['x']);
+
+container
+  .resolve('x')
+  .then(x => console.log(x.message()));
+// => 'x["y.forX"]'

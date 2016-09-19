@@ -3,7 +3,9 @@
 [![Code Climate](https://codeclimate.com/github/Griffingj/voila/badges/gpa.svg)](https://codeclimate.com/github/Griffingj/voila)
 [![Test Coverage](https://codeclimate.com/github/Griffingj/voila/badges/coverage.svg)](https://codeclimate.com/github/Griffingj/voila/coverage)
 
-#####Basic Usage
+A dependency injection container built with proxys that can handle circular 
+references
+
 Create the dependency injection container
 
 ```javascript
@@ -88,4 +90,35 @@ container
   .resolve('printer')
   .then(printer => printer.print())
 // => I am a formatter and I depend on these "{"a":"apple","b":{"source":"banana"},"c":{"dependency":"apple"}}", c.message() is "I am a coconut and contain a apple"
+```
+
+Resolve circular dependencies
+
+```javascript
+container.factory('x', (y) => {
+  return {
+    message() {
+      return `x["${y.forX()}"]`;
+    },
+    forY() {
+      return 'x.forY';
+    }
+  };
+}, ['y']);
+
+container.factory('y', (x) => {
+  return {
+    message() {
+      return `y["${x.forY()}"]`;
+    },
+    forX() {
+      return 'y.forX';
+    }
+  };
+}, ['x']);
+
+container
+  .resolve('x')
+  .then(x => console.log(x.message()));
+// => 'x["y.forX"]'
 ```
