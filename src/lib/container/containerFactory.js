@@ -1,16 +1,30 @@
-import mutableProxyFactory  from 'mutable-proxy';
-import assemble             from './assemble';
+import provision            from './provision';
 import validateRegistration from '../validation/validateRegistration';
+
+function circularCheck(resolveStep) {
+  return (key, ancestry = []) => {
+    const isCircular = ancestry.indexOf(key) !== -1;
+
+    if (isCircular) {
+      const readableAncestry = [...ancestry.slice(ancestry.indexOf(key)), key].join(' => ');
+      const error = new Error(`"${key}" has circular dependency, ancestry: ${readableAncestry}`);
+      return Promise.reject(error);
+    }
+    return resolveStep(key, ancestry);
+  };
+}
 
 export default function containerFactory(options = {}) {
   const {
-    postProcess = value => value
+    provisionDecorator = value => value,
+    resolveStepDecorator = circularCheck
   } = options;
 
   const registry = new Map();
   const resolved = new Map();
 
-  function resolveStep(key, circularMeta, ancestry = []) {
+  const decoratedProvision = provisionDecorator(provision);
+  const decoratedResolveStep = resolveStepDecorator((key, ancestry = []) => {
     if (resolved.has(key)) {
       return Promise.resolve(resolved.get(key));
     }
@@ -24,25 +38,15 @@ export default function containerFactory(options = {}) {
 
     // Resolve the dependencies of this key
     const dependencyPromises = requirements.map(requirement => {
-      // Return a proxy for circular dependencies, this will allow the
-      // dependencies to resolve, and any proxys will be updated afterward to
-      // forward to the correct objects
-      const isCircular = ancestry.indexOf(requirement) !== -1;
-
-      if (isCircular) {
-        const { proxy, setTarget } = mutableProxyFactory();
-        circularMeta.set(requirement, setTarget);
-        return proxy;
-      }
-      return resolveStep(requirement, circularMeta, [...ancestry, key]);
+      return decoratedResolveStep(requirement, [...ancestry, key]);
     });
 
     return Promise.all(dependencyPromises).then(dependencies => {
-      const value = postProcess(assemble(dependencies, registration));
+      const value = decoratedProvision(registration, dependencies);
       resolved.set(key, value);
       return value;
     });
-  }
+  });
 
   return {
     value(key, value) {
@@ -75,14 +79,7 @@ export default function containerFactory(options = {}) {
       return this;
     },
     resolve(key) {
-      const circularMeta = new Map();
-
-      return resolveStep(key, circularMeta).then(value => {
-        circularMeta.forEach((setProxyTarget, proxyKey) => {
-          setProxyTarget(resolved.get(proxyKey));
-        });
-        return value;
-      });
+      return decoratedResolveStep(key);
     },
     meta() {
       return {

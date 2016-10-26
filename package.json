@@ -17,10 +17,6 @@
     "build": "babel src --out-dir build",
     "validate": "npm ls"
   },
-  "engines": {
-    "node": "6.X.X",
-    "npm": "3.X.X"
-  },
   "author": "John Griffing",
   "license": "MIT",
   "devDependencies": {
@@ -44,8 +40,5 @@
     "test",
     "lint",
     "validate"
-  ],
-  "dependencies": {
-    "mutable-proxy": "^0.1.3"
-  }
+  ]
 }

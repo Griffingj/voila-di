@@ -1,4 +1,4 @@
-export default function assemble(dependencies, registration) {
+export default function provision(registration, dependencies) {
   const {
     factory,
     factoryWithCallback,
