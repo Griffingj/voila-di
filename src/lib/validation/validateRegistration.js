@@ -21,7 +21,7 @@ export default function validateRegistration(registration) {
     factoryWithCallback,
     factoryResolvePromise,
     constructorFunc
-  ].filter(item => item !== undefined)[0];
+  ].filter(x => x)[0];
 
   assert(provider, `${prefix} one of [value, factory, constructor,` +
     ' factoryWithCallback, factoryResolvePromise] required');

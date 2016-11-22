@@ -1,72 +1,43 @@
 import provision            from './provision';
+import rejectOnCircular     from '../utility/rejectOnCircular';
 import validateRegistration from '../validation/validateRegistration';
-
-function circularCheck(resolveStep) {
-  return (key, ancestry = []) => {
-    const isCircular = ancestry.indexOf(key) !== -1;
-
-    if (isCircular) {
-      const readableAncestry = [...ancestry.slice(ancestry.indexOf(key)), key].join(' => ');
-      const error = new Error(`"${key}" has circular dependency, ancestry: ${readableAncestry}`);
-      return Promise.reject(error);
-    }
-    return resolveStep(key, ancestry);
-  };
-}
+import ImproperUsageError   from '../errors';
 
 export default function containerFactory(options = {}) {
   const {
-    provisionDecorator = value => value,
-    resolveStepDecorator = circularCheck
+    extendProvision = x => x,
+    extendResolveStep = rejectOnCircular
   } = options;
 
   const registry = new Map();
   const resolved = new Map();
 
-  const decoratedProvision = provisionDecorator(provision);
-  const decoratedResolveStep = resolveStepDecorator((key, ancestry = []) => {
+  const extendedProvision = extendProvision(provision);
+  const extendedResolveStep = extendResolveStep((key, ancestry = []) => {
     if (resolved.has(key)) {
-      return Promise.resolve(resolved.get(key));
+      return resolved.get(key);
     }
     const registration = registry.get(key);
 
     if (!registration) {
-      const keyError = new Error(`Key "${key}" not found in registry`);
+      const keyError = new ImproperUsageError(`Key "${key}" not found in registry`);
       return Promise.reject(keyError);
     }
     const { requirements = [] } = registration;
 
-    // Resolve the dependencies of this key
+    // Recursively resolve dependencies
     const dependencyPromises = requirements.map(requirement => {
-      return decoratedResolveStep(requirement, [...ancestry, key]);
+      return extendedResolveStep(requirement, ancestry.concat(key));
     });
 
     return Promise.all(dependencyPromises).then(dependencies => {
-      const value = decoratedProvision(registration, dependencies);
-      resolved.set(key, value);
-      return value;
+      const promise = extendedProvision(registration, dependencies);
+      resolved.set(key, promise);
+      return promise;
     });
   });
 
   return {
-    value(key, value) {
-      return this.register({ key, value });
-    },
-    factory(key, factory, requirements) {
-      const registration = { key, requirements };
-
-      if (factory.withCallback) {
-        Object.assign(registration, { factoryWithCallback: factory });
-      } else if (factory.resolvePromise) {
-        Object.assign(registration, { factoryResolvePromise: factory });
-      } else {
-        Object.assign(registration, { factory });
-      }
-      return this.register(registration);
-    },
-    constructorFunc(key, constructorFunc, requirements) {
-      return this.register({ key, constructorFunc, requirements });
-    },
     register(registration) {
       validateRegistration(registration);
 
@@ -74,12 +45,12 @@ export default function containerFactory(options = {}) {
       registry.set(key, registration);
 
       if (value) {
-        resolved.set(key, value);
+        resolved.set(key, Promise.resolve(value));
       }
       return this;
     },
     resolve(key) {
-      return decoratedResolveStep(key);
+      return extendedResolveStep(key);
     },
     meta() {
       return {

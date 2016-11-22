@@ -1,2 +1,3 @@
 import containerFactory from './lib/container/containerFactory';
-module.exports.create = containerFactory;
+export * from './lib/errors';
+export default containerFactory;

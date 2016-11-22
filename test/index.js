@@ -8,7 +8,7 @@ const { describe, it, beforeEach } = lab;
 describe('voila-di', () => {
   describe('#create', () => {
     it('returns a dependency injection container', done => {
-      const diContainer = voila.create();
+      const diContainer = voila();
       expect(diContainer.register).toExist();
       expect(diContainer.resolve).toExist();
       done();
@@ -20,7 +20,7 @@ describe('voila-di', () => {
       let diContainer;
 
       beforeEach(done => {
-        diContainer = voila.create();
+        diContainer = voila();
         diContainer.register({
           key: 'a',
           factory(b) { return 'a'; },
@@ -36,6 +36,7 @@ describe('voila-di', () => {
 
       it('should return a rejected promise', () => {
         return diContainer.resolve('a').catch(error => {
+          console.log('here?')
           expect(error).toBeTruthy();
         });
       });
