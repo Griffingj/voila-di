@@ -3,93 +3,72 @@
 [![Code Climate](https://codeclimate.com/github/Griffingj/voila-di/badges/gpa.svg)](https://codeclimate.com/github/Griffingj/voila-di)
 [![Test Coverage](https://codeclimate.com/github/Griffingj/voila-di/badges/coverage.svg)](https://codeclimate.com/github/Griffingj/voila-di/coverage)
 
-A dependency injection container built with proxys that can handle circular 
-references
+A dependency injection library for async utility, modularity, and testability
 
 Create the dependency injection container
 
 ```javascript
-import voila from 'voila-di';
+import di from 'voila-di';
 
-const container = voila.create();
+const container = di();
 ```
 
-Store a value directly
+Configure a dependency graph and get a value
 
 ```javascript
-container.value('a', 'apple');
-```
+import di from 'voila-di';
 
-Store a value returned from a factory function  
-
-```javascript
-function bananaFactory() {
-  const banana = {
-    source: 'banana'
-  };
-  // The value other components may depend on
-  return banana;
-}
-container.factory('b', bananaFactory);
-```
-
-Store a value returned by using the new operator on a constructor function
-
-```javascript
-function Coconut(dependency) {
-  this.dependency = dependency;
+function getPromise(val) {
+  return new Promise(resolve => setTimeout(() => resolve(val), 50));
 }
 
-Coconut.prototype = {
-  message() {
-    return `I am a coconut and contain a ${this.dependency}`;
-  }
-};
-container.constructorFunc('c', Coconut, ['a']);
+const container = di({
+  // You can specify a value named 'a' and a function
+  // whose parameters indicate named dependencies from
+  // elsewhere in the graph
+  a: (b, c, d) => getPromise(b + c + d + 1),
+  // Or the function can return a value
+  b(e) {
+    return 2;
+  },
+  // Or you can directly specify a promise
+  c: getPromise(5),
+  // Or a non-function value
+  d: 5,
+  // Or do arbitrary imperative tasks
+  e: () => console.log('e done before b')
+});
+
+container.get('a').then(console.log);
+// => e done before b
+// => 13
 ```
 
-Store a value from a factory which takes a node-style callback as the last argument
+Configure a dependency graph and ensure all the tasks are triggered once
 
 ```javascript
-function formatterFactory(a, b, c, callback) {
-  const value = {
-    toString() {
-      return 'I am a formatter and I depend on these ' +
-        `"${JSON.stringify({ a, b, c })}", c.message() is "${c.message()}"`;
-    }
-  };
-  setTimeout(() => callback(null, value), 500);
-}
-formatterFactory.withCallback = true;
-container.factory('formatter', formatterFactory, ['a', 'b', 'c']);
-```
+import di from 'voila-di';
 
-
-Store the resolved value from a factory that returns a promise
-
-```javascript
-function printerFactory(formatter, logable) {
+function printEventually(val) {
   return new Promise(resolve => {
     setTimeout(() => {
-      const value = {
-        print() {
-          logable.log(formatter.toString());
-        }
-      };
-      resolve(value);
-    }, 500);
+      console.log(val);
+      resolve();
+    }, 50);
   });
 }
-printerFactory.resolvePromise = true;
-container.value('logger', console);
-container.factory('printer', printerFactory, ['formatter', 'logger']);
-```
 
-Resolve dependencies lazily
+const container2 = di({
+  a: (b, c) => printEventually('a done after b and c'),
+  b: (c) => printEventually('b done after c'),
+  c: () => printEventually('c done'),
+  d: 5,
+  e: (d) => d + 1
+});
 
-```javascript
-container
-  .resolve('printer')
-  .then(printer => printer.print())
-// => I am a formatter and I depend on these "{"a":"apple","b":{"source":"banana"},"c":{"dependency":"apple"}}", c.message() is "I am a coconut and contain a apple"
+container2.getAll().then(console.log);
+// => c done
+// => b done after c
+// => a done after b and c
+// => { d: 5, e: 6, c: undefined, b: undefined, a: undefined }
 ```

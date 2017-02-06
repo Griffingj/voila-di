@@ -1,14 +1,14 @@
-const Babel = require('babel-core');
+const ts = require('typescript');
 
 module.exports = [{
-  ext: '.js',
+  ext: '.ts',
   transform(content, filename) {
     if (filename.indexOf('node_modules') === -1) {
-      return Babel.transform(content, {
-        filename,
-        sourceMap: 'inline',
-        sourceFileName: filename
-      }).code;
+      return ts.transpile(content, {
+        compilerOptions: {
+          module: ts.ModuleKind.CommonJS
+        }
+      });
     }
     return content;
   }

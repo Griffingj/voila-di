@@ -15,9 +15,5 @@ branches:
   except:
     - g3_v2_0
 
-cache:
-  directories:
-     - ./node_modules
-
 after_script:
   - npm run report-cov
