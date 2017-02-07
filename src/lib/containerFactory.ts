@@ -139,47 +139,42 @@ export default function containerFactory(
           // Otherwise try to fulfill the declaration by checking the status of it's dependencies
           const result = tryFulfill(current, lookup);
 
-          switch (result.kind) {
-            case 'Success': {
-              lookup.set(key, wrap(current, result.value));
-              continue;
-            }
-            case 'Failure': {
-              defered.push(current);
-                // This may be a TSC bug
-              const depkeys = result.value as string[];
+          if (result.kind === 'Success') {
+            lookup.set(key, wrap(current, result.value));
+          } else if (result.kind === 'Failure') {
+            defered.push(current);
+            const depkeys = result.value;
 
-              for (const depKey of depkeys) {
-                const declaration = graph[depKey];
+            for (const depKey of depkeys) {
+              const declaration = graph[depKey];
 
-                // If the current depKey cannot be found in the graph, fail
-                if (!declaration) {
-                  reject({
-                    kind: 'MissingDependency',
-                    message: `"${key}" required missing dependency "${depKey}"`
-                  });
-                  return;
-                }
-
-                // If the current dependency has been visited on this path before
-                // there is a circular dependency, fail
-                if (history.has(depKey)) {
-                  reject({
-                    kind: 'CircularDependency',
-                    message: `"${key}" has circular dependency "${depKey}"`,
-                    value: {
-                      history: Array.from(history)
-                    }
-                  });
-                  return;
-                }
-
-                unvisited.push({
-                  history: new Set([...Array.from(history), key]),
-                  key: depKey,
-                  ...declaration
+              // If the current depKey cannot be found in the graph, fail
+              if (!declaration) {
+                reject({
+                  kind: 'MissingDependency',
+                  message: `"${key}" required missing dependency "${depKey}"`
                 });
+                return;
               }
+
+              // If the current dependency has been visited on this path before
+              // there is a circular dependency, fail
+              if (history.has(depKey)) {
+                reject({
+                  kind: 'CircularDependency',
+                  message: `"${key}" has circular dependency "${depKey}"`,
+                  value: {
+                    history: Array.from(history)
+                  }
+                });
+                return;
+              }
+
+              unvisited.push({
+                history: new Set([...Array.from(history), key]),
+                key: depKey,
+                ...declaration
+              });
             }
           }
         }
@@ -223,7 +218,13 @@ export default function containerFactory(
       return container.getSome(...allKeys);
     },
     setOptions(optionsToMerge) {
-      options = { ...options, ...optionsToMerge };
+      if (optionsToMerge) {
+        options = { ...options, ...optionsToMerge };
+      }
+      // If passing nothing reset to original options
+      else {
+        options = { ...defaultLibOpts, ...libOptions };
+      }
       return container;
     }
   };
