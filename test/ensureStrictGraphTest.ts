@@ -6,7 +6,7 @@ import * as Fixtures     from './fixtures';
 export const lab = script();
 const { describe, it } = lab;
 
-function isStrict(key, declaration) {
+export function isStrict(declaration) {
   const { dependencies, provider } = declaration;
   return (!dependencies || dependencies instanceof Array) &&
     provider instanceof Function;
@@ -18,7 +18,7 @@ describe('ensureStrictGraph', () => {
     let nonStrict = false;
 
     for (const key of Object.keys(maybeStrict)) {
-      if (!isStrict(key, maybeStrict[key])) {
+      if (!isStrict(maybeStrict[key])) {
         nonStrict = true;
       }
     }

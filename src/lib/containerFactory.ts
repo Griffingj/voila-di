@@ -55,7 +55,8 @@ export default function containerFactory(
 
   // Ensure that the value from a provider is postProcessed and wrapped in a promise
   function wrap(node, value) {
-    return Promise.resolve(value)
+    return Promise
+      .resolve(value)
       .then(val => options.postProcess(node, value));
   }
 
@@ -207,9 +208,7 @@ export default function containerFactory(
 
         Promise
           .all(promises)
-          .then(() => {
-            resolve(mappedValues);
-          })
+          .then(() => resolve(mappedValues))
           .catch(reject);
       });
     },

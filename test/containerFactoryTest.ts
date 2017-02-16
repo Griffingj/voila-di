@@ -214,7 +214,7 @@ describe('containerFactories', () => {
     });
   });
 
-  describe('strictFactory', () => {
+  describe('strict containerFactory', () => {
     it('returns a promise that resolves to a container', done => {
       expect(strictFactory()).to.be.ok;
       done();
