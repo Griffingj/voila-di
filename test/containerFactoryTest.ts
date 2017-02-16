@@ -9,7 +9,7 @@ import * as Fixtures     from './fixtures';
 export const lab = script();
 const { describe, it } = lab;
 
-describe('containerFactories', () => {
+describe('containerFactory', () => {
   describe('looseFactory', () => {
     it('returns a promise that resolves to a container, with a well formed graph', done => {
       expect(looseFactory()).to.be.ok;

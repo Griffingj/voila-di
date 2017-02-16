@@ -6,7 +6,7 @@ import once       from '../src/lib/once';
 export const lab = script();
 const { describe, it } = lab;
 
-describe('flatten', () => {
+describe('once', () => {
   it('only calls the passed function once', done => {
     const func = spy();
     const out = once(func);
