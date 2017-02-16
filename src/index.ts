@@ -1,4 +1,9 @@
 import containerFactory from './lib/containerFactory';
 import looseContainerFactory from './lib/looseContainerFactory';
+import fsGraphFactory from './lib/fsGraphFactory';
+
 export default looseContainerFactory;
-export const strictFactory = containerFactory;
+export {
+  fsGraphFactory,
+  containerFactory as strictFactory
+};

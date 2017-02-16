@@ -60,4 +60,13 @@ describe('asyncAll', () => {
       done();
     });
   });
+
+  it('resolves to an empty array if tasks is also empty', done => {
+    const tasks = [];
+
+    asyncAll(tasks).then(results => {
+      expect(results).to.eql([]);
+      done();
+    });
+  });
 });

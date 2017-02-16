@@ -1,8 +1,10 @@
-export default function once(task: Function) {
-  let onlyOnce = task;
+const doNothing = () => undefined;
+
+export default function once(doOnce: Function) {
+  let action = doOnce;
 
   return (...args) => {
-    onlyOnce(...args);
-    onlyOnce = () => undefined;
+    action(...args);
+    action = doNothing;
   };
 }

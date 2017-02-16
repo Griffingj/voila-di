@@ -9,8 +9,13 @@ export default function asyncAll(tasks: Task[]): Promise<any> {
     const results: any[] = [];
     let count = 0;
 
-    const ender = once((error, res) => {
-      error ? reject(error) : resolve(res);
+    if (!length) {
+      resolve(tasks);
+      return;
+    }
+
+    const ender = once((error, value) => {
+      error ? reject(error) : resolve(value);
     });
 
     function callback(error, result) {

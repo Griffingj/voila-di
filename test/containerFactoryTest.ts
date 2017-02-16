@@ -1,3 +1,4 @@
+import { spy }           from 'sinon';
 import { mock }          from 'sinon';
 import { script }        from 'lab';
 import { expect }        from 'chai';
@@ -13,6 +14,15 @@ describe('containerFactories', () => {
     it('returns a promise that resolves to a container, with a well formed graph', done => {
       expect(looseFactory()).to.be.ok;
       done();
+    });
+
+    describe('postProcess option', () => {
+      it('allows a passed func to decorate the di objects', () => {
+        const postProcess = spy(val => val);
+        return looseFactory(Fixtures.funcSingleFile, { postProcess })
+          .get('a')
+          .then(val => expect(postProcess.callCount).to.eql(6));
+      });
     });
 
     describe('the returned container', () => {
