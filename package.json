@@ -16,7 +16,6 @@
   "scripts": {
     "build": "tsc --pretty",
     "lint": "tslint --project . --format msbuild",
-    "postinstall": "tsc --pretty",
     "prepublish": "tsc --pretty",
     "report-cov": "lab --coverage -r lcov | codeclimate-test-reporter",
     "start": "ts-node ./src/main.ts",
