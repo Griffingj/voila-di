@@ -1,9 +1,16 @@
-import containerFactory from './lib/containerFactory';
+import containerFactory      from './lib/containerFactory';
 import looseContainerFactory from './lib/looseContainerFactory';
-import fsGraphFactory from './lib/fsGraphFactory';
+import ensureStrictGraph     from './lib/ensureStrictGraph';
+import strictGraphToTree     from './lib/strictGraphToTree';
+import functionToParams      from './lib/functionToParams';
+import * as Types            from './lib/types';
 
 export default looseContainerFactory;
+
 export {
-  fsGraphFactory,
+  Types,
+  strictGraphToTree,
+  ensureStrictGraph,
+  functionToParams,
   containerFactory as strictFactory
 };
