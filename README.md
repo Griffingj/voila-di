@@ -72,3 +72,30 @@ container2.getAll().then(console.log);
 // => a done after b and c
 // => { d: 5, e: 6, c: undefined, b: undefined, a: undefined }
 ```
+
+Inspect a tree view of all of the dependencies in the graph using `topiary` to pretty print the tree
+
+```javascript
+import di           from 'voila-di';
+import * as topiary from 'topiary';
+
+const container3 = di({
+  service1: (service2, service3) => {},
+  service2: (service3) => {},
+  service3: () => {},
+});
+
+const tree = container3.getTree();
+const treeView = topiary(tree, 'children', { sort: true });
+console.log(treeView);
+
+// container
+//  ├─┬service1
+//  │ ├─┬service2
+//  │ │ └──service3
+//  │ └──service3
+//  ├─┬service2
+//  │ └──service3
+//  └──service3
+```
+

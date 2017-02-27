@@ -31,6 +31,32 @@ export const strictSingleFile = {
   f: { provider: () => 5 },
 };
 
+export const strictSingleFileTree = {
+  name: 'container', children: [
+    { name: 'f', children: [] },
+    { name: 'e', children: [
+      { name: 'f', children: [] } ] },
+    { name: 'd', children: [
+      { name: 'e', children: [
+        { name: 'f', children: [] } ] } ] },
+    { name: 'c', children: [
+      { name: 'd', children: [
+        { name: 'e', children: [
+          { name: 'f', children: [] } ] } ] } ] },
+    { name: 'b', children: [
+      { name: 'c', children: [
+        { name: 'd', children: [
+          { name: 'e', children: [
+            { name: 'f', children: [] } ] } ] } ] } ] },
+    { name: 'a', children: [
+      { name: 'b', children: [
+        { name: 'c', children: [
+          { name: 'd', children: [
+            { name: 'e', children: [
+              { name: 'f', children: [] } ] } ] } ] } ] } ] }
+  ]
+};
+
 export const funcBroad = {
   a: (b, c, d, e, f) => b + c + d + e + f + 5,
   b: () => 1,

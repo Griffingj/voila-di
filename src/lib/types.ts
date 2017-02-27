@@ -23,12 +23,18 @@ export type Options = Partial<{
   postProcess: (node: DependencyNode, value: any) => any;
 }>
 
+export type TreeNode = {
+  name: string;
+  children: TreeNode[];
+};
+
 export type Container = {
   merge(otherGraph: LooseGraph): Result<Container, undefined>;
   mergeStrict(otherGraph: StrictGraph): Result<Container, undefined>;
   get(key: string): Promise<any>;
   getSome(...keys: string[]): Promise<{ [key: string]: any }>;
   getAll(): Promise<{ [key: string]: any }>;
+  getTree(): TreeNode;
   setOptions(options: Partial<Options>): Container;
 }
 

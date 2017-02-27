@@ -7,6 +7,7 @@ import { Options }        from './types';
 import { Result }         from './types';
 import { StrictGraph }    from './types';
 import ensureStrictGraph  from './ensureStrictGraph';
+import strictGraphToTree  from './strictGraphToTree';
 
 const defaultLibOpts = {
   failOnClobber: true,
@@ -215,6 +216,9 @@ export default function containerFactory(
     getAll() {
       const allKeys = Object.keys(graph);
       return container.getSome(...allKeys);
+    },
+    getTree() {
+      return strictGraphToTree(graph);
     },
     setOptions(optionsToMerge) {
       if (optionsToMerge) {
