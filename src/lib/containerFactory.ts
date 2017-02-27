@@ -1,11 +1,11 @@
-import { Container }      from './types';
-import { Declaration }    from './types';
-import { DependencyNode } from './types';
-import { GraphLookup }    from './types';
-import { LooseGraph }     from './types';
-import { Options }        from './types';
-import { Result }         from './types';
-import { StrictGraph }    from './types';
+import { Container }      from '../index';
+import { Declaration }    from '../index';
+import { DependencyNode } from '../index';
+import { GraphLookup }    from '../index';
+import { LooseGraph }     from '../index';
+import { Options }        from '../index';
+import { Result }         from '../index';
+import { StrictGraph }    from '../index';
 import ensureStrictGraph  from './ensureStrictGraph';
 import strictGraphToTree  from './strictGraphToTree';
 

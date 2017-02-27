@@ -1,6 +1,6 @@
-import { Declaration }  from './types';
-import { LooseGraph }   from './types';
-import { StrictGraph }  from './types';
+import { Declaration }  from '../index';
+import { LooseGraph }   from '../index';
+import { StrictGraph }  from '../index';
 import functionToParams from './functionToParams';
 
 function parseFunc(func: Function): Declaration {
