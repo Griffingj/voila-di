@@ -1,0 +1,2 @@
+- Add additional lifecycle hooks?
+- Performance tests
