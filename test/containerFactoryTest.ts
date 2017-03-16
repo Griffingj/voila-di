@@ -221,6 +221,22 @@ describe('containerFactory', () => {
             .then(val => expect(val).to.eql(1));
         });
       });
+
+      describe('#getGraph', () => {
+        it('returns a graph identical to the one used to create the container', done => {
+          const graph = strictFactory(Fixtures.strictSingleFile).getGraph();
+          expect(graph).to.deep.equal(Fixtures.strictSingleFile);
+          done();
+        });
+      });
+
+      describe('#getTree', () => {
+        it('returns a graph identical to the one used to create the container', done => {
+          const tree = strictFactory(Fixtures.strictSingleFile).getTree();
+          expect(tree).to.deep.equal(Fixtures.strictSingleFileTree);
+          done();
+        });
+      });
     });
   });
 

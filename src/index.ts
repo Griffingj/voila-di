@@ -50,6 +50,7 @@ export type Container = {
   getSome(...keys: string[]): Promise<{ [key: string]: any }>;
   getAll(): Promise<{ [key: string]: any }>;
   getTree(): TreeNode;
+  getGraph(): StrictGraph;
   setOptions(options: Partial<Options>): Container;
 }
 

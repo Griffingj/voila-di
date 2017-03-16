@@ -46,6 +46,11 @@ function tryFulfill(declaration: Declaration, lookup: GraphLookup): FulfillResul
   };
 }
 
+// Ensure that the value from a provider is postProcessed and wrapped in a promise
+function wrap(node, value, options) {
+  return Promise.resolve(value).then(val => options.postProcess(node, value));
+}
+
 export default function containerFactory(
   graph: StrictGraph = {},
   libOptions?: Options,
@@ -53,13 +58,6 @@ export default function containerFactory(
 
   let options = { ...defaultLibOpts, ...libOptions };
   const lookup: GraphLookup = graphLookup ? new Map(graphLookup) : new Map();
-
-  // Ensure that the value from a provider is postProcessed and wrapped in a promise
-  function wrap(node, value) {
-    return Promise
-      .resolve(value)
-      .then(val => options.postProcess(node, value));
-  }
 
   const container: Container = {
     merge(otherGraph: LooseGraph) {
@@ -135,14 +133,15 @@ export default function containerFactory(
 
           // The current node has no dependencies
           if (!dependencies || !dependencies.length) {
-            lookup.set(key, wrap(current, provider()));
+            const wrapped = wrap(current, provider(), options);
+            lookup.set(key, wrapped);
             continue;
           }
           // Otherwise try to fulfill the declaration by checking the status of it's dependencies
           const result = tryFulfill(current, lookup);
 
           if (result.kind === 'Success') {
-            lookup.set(key, wrap(current, result.value));
+            lookup.set(key, wrap(current, result.value, options));
           } else if (result.kind === 'Failure') {
             defered.push(current);
             const depkeys = result.value;
@@ -186,7 +185,8 @@ export default function containerFactory(
         if (defered.length) {
           while (deferedCurrent = defered.pop()!) {
             const result = tryFulfill(deferedCurrent, lookup);
-            lookup.set(deferedCurrent.key, wrap(deferedCurrent, result.value) as Promise<any>);
+            const wrapped = wrap(deferedCurrent, result.value, options);
+            lookup.set(deferedCurrent.key,  wrapped);
           }
         }
         resolve(lookup.get(requestedKey));
@@ -219,6 +219,9 @@ export default function containerFactory(
     },
     getTree() {
       return strictGraphToTree(graph);
+    },
+    getGraph() {
+      return { ...graph };
     },
     setOptions(optionsToMerge) {
       if (optionsToMerge) {
