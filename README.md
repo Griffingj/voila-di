@@ -1,4 +1,4 @@
-# Voilà Dependency Injection
+# Voilà, Dependency Injection
 [![Build Status](https://travis-ci.org/Griffingj/voila-di.svg?branch=master)](https://travis-ci.org/Griffingj/voila-di)
 [![Code Climate](https://codeclimate.com/github/Griffingj/voila-di/badges/gpa.svg)](https://codeclimate.com/github/Griffingj/voila-di)
 [![Test Coverage](https://codeclimate.com/github/Griffingj/voila-di/badges/coverage.svg)](https://codeclimate.com/github/Griffingj/voila-di/coverage)
