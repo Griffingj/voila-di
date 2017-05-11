@@ -1,5 +1,5 @@
 import { StrictGraph } from '../index';
-import { TreeNode }    from '../index';
+import { TreeNode }    from './containerFactory';
 
 export default function strictGraphToTree(graph: StrictGraph): TreeNode {
   const lookup: Map<string, string[]> = new Map();

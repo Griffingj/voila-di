@@ -150,3 +150,24 @@ export const strictPartialRight = {
 export const strictPartialRightCircular = {
   a: { dependencies: ['a'], provider: (a) => a + 1 }
 };
+
+export const simpleCircularResolve = {
+  a(b) {
+    return {
+      do: () => 1 + b.provide,
+      provide: 1
+    };
+  },
+  b(c) {
+    return {
+      do: () => 1 + c.provide,
+      provide: 2
+    };
+  },
+  c(a) {
+    return {
+      do: () => 1 + a.provide,
+      provide: 3
+    };
+  }
+};

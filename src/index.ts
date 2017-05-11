@@ -33,43 +33,22 @@ export type StrictGraph = {
   [key: string]: Declaration
 };
 
-export type Options = Partial<{
-  failOnClobber: boolean;
-  postProcess: (node: DependencyNode, value: any) => any;
-}>
-
-export type TreeNode = {
-  name: string;
-  children: TreeNode[];
-};
-
-export type Container = {
-  merge(otherGraph: LooseGraph): Result<Container, undefined>;
-  mergeStrict(otherGraph: StrictGraph): Result<Container, undefined>;
-  get(key: string): Promise<any>;
-  getSome(...keys: string[]): Promise<{ [key: string]: any }>;
-  getAll(): Promise<{ [key: string]: any }>;
-  getTree(): TreeNode;
-  getGraph(): StrictGraph;
-  setOptions(options: Partial<Options>): Container;
-}
-
 export type Success<T> = {
   kind: 'Success';
   value: T;
 };
 
-export type ExposedFailureKind = 'CircularDependency' | 'MissingDependency' | 'KeyClobberFailure';
+export type FailureKind =
+  'CircularDependencyFailure' |
+  'MissingDependencyFailure' |
+  'KeyClobberFailure' |
+  'InvalidProxyTargetFailure';
 
-export type ExposedFailure<F> = {
-  kind: ExposedFailureKind
-  message: string,
-  value?: F
+export type Failure = {
+  kind: FailureKind
+  message: string
 }
 
-export type Failure<F> = {
-  kind: 'Failure';
-  value: F;
-}
-
-export type Result<T, F> = Success<T> | Failure<F> | ExposedFailure<F>;
+export type Result<T> = (Success<T> | Failure) & {
+  orThrow(): T;
+};

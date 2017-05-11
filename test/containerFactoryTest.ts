@@ -27,34 +27,47 @@ describe('containerFactory', () => {
 
     describe('the returned container', () => {
       describe('#get', () => {
-        it('rejects with a circular dependency', () => {
-          return looseFactory(Fixtures.funcSingleFile)
-            .get('a')
-            .then(val => expect(val).to.eql(20));
+        describe('when handleCircular false', () => {
+          it('rejects with a circular dependency', async () => {
+            try {
+              await looseFactory(Fixtures.strictPartialRightCircular, {
+                handleCircular: false
+              });
+            } catch (thrown) {
+              expect(thrown).to.have.property('kind', 'CircularDependencyFailure');
+            }
+          });
+        });
+
+        describe('when handleCircular using default', () => {
+          it('resolves resolveable circular dependency', async () => {
+            const { a, b, c } = await looseFactory(Fixtures.simpleCircularResolve);
+            expect(a.do()).to.eql(3);
+            expect(b.do()).to.eql(4);
+            expect(c.do()).to.eql(2);
+          });
         });
 
         it('rejects with an immediately missing dependency', () => {
           return looseFactory(Fixtures.funcSingleFile)
             .get('z')
-            .catch(failure => expect(failure.kind).to.eql('MissingDependency'));
+            .catch(failure => expect(failure.kind).to.eql('MissingDependencyFailure'));
         });
 
         it('rejects with a downstream missing dependency', () => {
           return looseFactory(Fixtures.strictPartialLeft)
             .getSome('a')
-            .catch(failure => expect(failure.kind).to.eql('MissingDependency'));
+            .catch(failure => expect(failure.kind).to.eql('MissingDependencyFailure'));
         });
 
-        it('resolves a chain of function declarations', () => {
-          return looseFactory(Fixtures.funcSingleFile)
-            .get('a')
-            .then(val => expect(val).to.eql(20));
+        it('resolves a chain of function declarations', async () => {
+          const { a } = await looseFactory(Fixtures.funcSingleFile);
+          expect(a).to.eql(20);
         });
 
-        it('resolves when a key has an undefined return value', () => {
-          return looseFactory(Fixtures.funcSingleFileUndefinedVal)
-            .get('a')
-            .then(val => expect(val).to.eql(15));
+        it('resolves when a key has an undefined return value', async () => {
+          const { a } = await looseFactory(Fixtures.funcSingleFileUndefinedVal);
+          expect(a).to.eql(15);
         });
 
         it('resolves a chain of strict declarations', () => {
@@ -116,21 +129,28 @@ describe('containerFactory', () => {
         it('rejects with an immediately missing dependency', () => {
           return looseFactory(Fixtures.broadShortPromises)
             .getSome('a', 'b', 'c', 'z')
-            .catch(failure => expect(failure.kind).to.eql('MissingDependency'));
+            .catch(failure => expect(failure.kind).to.eql('MissingDependencyFailure'));
         });
 
         it('rejects with a downstream missing dependency', () => {
           return looseFactory(Fixtures.strictPartialLeft)
             .getSome('a')
-            .catch(failure => expect(failure.kind).to.eql('MissingDependency'));
+            .catch(failure => expect(failure.kind).to.eql('MissingDependencyFailure'));
         });
 
-        it('rejects with a circular dependency', () => {
-          return looseFactory(Fixtures.broadShortPromises, { failOnClobber: false })
-            .merge(Fixtures.strictPartialRightCircular)
-            .value
-            .getSome('a', 'b', 'c')
-            .catch(failure => expect(failure.kind).to.eql('CircularDependency'));
+        describe('when handleCircular false', () => {
+          it('rejects with a circular dependency', () => {
+            const container = looseFactory(Fixtures.broadShortPromises, {
+              failOnClobber: false,
+              handleCircular: false
+            });
+
+            return container
+              .merge(Fixtures.strictPartialRightCircular)
+              .orThrow()
+              .getSome('a', 'b', 'c')
+              .catch(failure => expect(failure.kind).to.eql('CircularDependencyFailure'));
+          });
         });
       });
 
@@ -145,12 +165,19 @@ describe('containerFactory', () => {
             });
         });
 
-        it('rejects with a circular dependency', () => {
-          return looseFactory(Fixtures.broadShortPromises, { failOnClobber: false })
-            .merge(Fixtures.strictPartialRightCircular)
-            .value
-            .getAll()
-            .catch(failure => expect(failure.kind).to.eql('CircularDependency'));
+        describe('when handleCircular false', () => {
+          it('rejects with a circular dependency', () => {
+            const container = looseFactory(Fixtures.broadShortPromises, {
+              failOnClobber: false,
+              handleCircular: false,
+            });
+
+            return container
+              .merge(Fixtures.strictPartialRightCircular)
+              .orThrow()
+              .getAll()
+              .catch(failure => expect(failure.kind).to.eql('CircularDependencyFailure'));
+          });
         });
 
         it('calls each provider once', () => {
@@ -173,7 +200,7 @@ describe('containerFactory', () => {
         it('merges a graph into an existing container', () => {
           return looseFactory({ z: 20 })
             .merge(Fixtures.broadShortPromises)
-            .value
+            .orThrow()
             .getAll()
             .then(values => {
               expect(values).to.eql({
@@ -192,7 +219,7 @@ describe('containerFactory', () => {
           return looseFactory({ b: 20 })
             .setOptions({ failOnClobber: false })
             .merge(Fixtures.strictPartialRight)
-            .value
+            .orThrow()
             .get('b')
             .then(val => expect(val).to.eql(1));
         });
@@ -202,7 +229,7 @@ describe('containerFactory', () => {
         it('merges a strict graph into an existing container', () => {
           return looseFactory(Fixtures.strictPartialLeft)
             .mergeStrict(Fixtures.strictPartialRight)
-            .value
+            .orThrow()
             .get('a')
             .then(val => expect(val).to.eql(2));
         });
@@ -216,7 +243,7 @@ describe('containerFactory', () => {
         it('allows key clobber when configured', () => {
           return looseFactory({ b: 20 }, { failOnClobber: false })
             .mergeStrict(Fixtures.strictPartialRight)
-            .value
+            .orThrow()
             .get('b')
             .then(val => expect(val).to.eql(1));
         });

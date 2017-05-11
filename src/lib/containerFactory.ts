@@ -1,20 +1,56 @@
-import { Container }      from '../index';
-import { Declaration }    from '../index';
-import { DependencyNode } from '../index';
-import { GraphLookup }    from '../index';
-import { LooseGraph }     from '../index';
-import { Options }        from '../index';
-import { Result }         from '../index';
-import { StrictGraph }    from '../index';
-import ensureStrictGraph  from './ensureStrictGraph';
-import strictGraphToTree  from './strictGraphToTree';
+import { Declaration }     from '../index';
+import { DependencyNode }  from '../index';
+import { GraphLookup }     from '../index';
+import { LooseGraph }      from '../index';
+import { Result }          from '../index';
+import { StrictGraph }     from '../index';
+import { Success }         from '../index';
+import ensureStrictGraph   from './ensureStrictGraph';
+import strictGraphToTree   from './strictGraphToTree';
+import resultFactory       from './resultFactory';
+import proxify             from './proxify';
+import { Proxify }         from './proxify';
+import { ProxyController } from './proxify';
 
-const defaultLibOpts = {
+export type Options = {
+  failOnClobber: boolean;
+  handleCircular: Proxify | false;
+  postProcess: (node: DependencyNode, value: any) => any;
+}
+
+export type TreeNode = {
+  name: string;
+  children: TreeNode[];
+};
+
+export type OnFulfill = ((some: any) => any) | undefined;
+export type OnReject = (some: any) => any;
+
+export type Container = {
+  merge(otherGraph: LooseGraph): Result<Container>;
+  mergeStrict(otherGraph: StrictGraph): Result<Container>;
+  get(key: string): Promise<any>;
+  getSome(...keys: string[]): Promise<{ [key: string]: any }>;
+  getAll(): Promise<{ [key: string]: any }>;
+  getTree(): TreeNode;
+  getGraph(): StrictGraph;
+  then(onFulfill: OnFulfill, onReject?: OnReject): Promise<any>;
+  catch(onReject: OnReject): Promise<any>;
+  setOptions(options: Partial<Options>): Container;
+}
+
+const defaultLibOpts: Options = {
   failOnClobber: true,
+  handleCircular: proxify,
   postProcess: (node: DependencyNode, value: any) => value
 };
 
-type FulfillResult = Result<Promise<any>, string[]>;
+export type InternalFailure<T> = {
+  kind: 'Failure';
+  value: T;
+}
+
+type FulfillResult = Success<Promise<any>> | InternalFailure<string[]>;
 
 function tryFulfill(declaration: Declaration, lookup: GraphLookup): FulfillResult {
   const unfulfillable: string[] = [];
@@ -33,11 +69,12 @@ function tryFulfill(declaration: Declaration, lookup: GraphLookup): FulfillResul
 
   // If the current node's dependencies are all in the lookup,
   // generate the promise and set it in the lookup
+  const value = Promise
+    .all(activeDeps)
+    .then(results => provider.apply(undefined, results));
+
   if (!unfulfillable.length) {
-    return {
-      kind: 'Success',
-      value: Promise.all(activeDeps).then(results => provider.apply(undefined, results))
-    };
+    return { kind: 'Success', value };
   }
 
   return {
@@ -48,15 +85,20 @@ function tryFulfill(declaration: Declaration, lookup: GraphLookup): FulfillResul
 
 // Ensure that the value from a provider is postProcessed and wrapped in a promise
 function wrap(node, value, options) {
-  return Promise.resolve(value).then(val => options.postProcess(node, value));
+  return Promise
+    .resolve(value)
+    .then(val => options.postProcess(node, value));
 }
 
 export default function containerFactory(
   graph: StrictGraph = {},
-  libOptions?: Options,
+  libOptions?: Partial<Options>,
   graphLookup?: GraphLookup): Container {
 
-  let options = { ...defaultLibOpts, ...libOptions };
+  let options = {
+    ...defaultLibOpts,
+    ...libOptions
+  };
   const lookup: GraphLookup = graphLookup ? new Map(graphLookup) : new Map();
 
   const container: Container = {
@@ -75,10 +117,10 @@ export default function containerFactory(
 
         for (const key of keys) {
           if (key in newGraph) {
-            return {
+            return resultFactory(undefined, {
               kind: 'KeyClobberFailure',
               message: `"${key}" overloaded by merging graph`
-            };
+            });
           }
           newGraph[key] = otherGraph[key];
         }
@@ -89,10 +131,10 @@ export default function containerFactory(
         };
       }
 
-      return {
+      return resultFactory({
         kind: 'Success',
         value: containerFactory(newGraph, options, lookup)
-      };
+      });
     },
     get(requestedKey) {
       // If the key cannot be found in the graph, fail
@@ -100,7 +142,7 @@ export default function containerFactory(
 
       if (!maybeDeclaration) {
         return Promise.reject({
-          kind: 'MissingDependency',
+          kind: 'MissingDependencyFailure',
           message: `Graph does not contain key "${requestedKey}"`
         });
       }
@@ -111,86 +153,119 @@ export default function containerFactory(
         return maybePromise;
       }
 
-      // Use iterative breadth first search to resolve the tree of all dependencies for this key
-      return new Promise((resolve, reject) => {
-        const first = {
-          history: new Set(),
-          key: requestedKey,
-          ...maybeDeclaration
-        };
-        const unvisited: DependencyNode[] = [first];
-        const defered: DependencyNode[] = [];
+      // This is used in the resolution of circular dependencies if configured
+      type ProxyPatch = [Declaration, ProxyController];
+      const proxyPatches: ProxyPatch[] = [];
+      const { handleCircular } = options;
 
-        let current: DependencyNode;
+      // Use iterative depth first search to resolve the tree
+      // of all dependencies for this key, and memoize it
+      const first = {
+        history: new Set(),
+        key: requestedKey,
+        ...maybeDeclaration
+      };
+      const unvisited: DependencyNode[] = [first];
+      const defered: DependencyNode[] = [];
 
-        while (current = unvisited.pop()!) {
-          const {
-            dependencies,
-            history,
-            key,
-            provider
-          } = current;
+      let current: DependencyNode;
 
-          // The current node has no dependencies
-          if (!dependencies || !dependencies.length) {
-            const wrapped = wrap(current, provider(), options);
-            lookup.set(key, wrapped);
-            continue;
-          }
-          // Otherwise try to fulfill the declaration by checking the status of it's dependencies
-          const result = tryFulfill(current, lookup);
+      while (current = unvisited.pop()!) {
+        const {
+          dependencies,
+          history,
+          key,
+          provider
+        } = current;
 
-          if (result.kind === 'Success') {
-            lookup.set(key, wrap(current, result.value, options));
-          } else if (result.kind === 'Failure') {
-            defered.push(current);
-            const depkeys = result.value;
+        // If the current node has no dependencies
+        if (!dependencies || !dependencies.length) {
+          const wrapped = wrap(current, provider(), options);
+          lookup.set(key, wrapped);
+          continue;
+        }
+        // Otherwise try to fulfill the declaration by checking each dependency
+        const result = tryFulfill(current, lookup);
 
-            for (const depKey of depkeys) {
-              const declaration = graph[depKey];
+        if (result.kind === 'Success') {
+          lookup.set(key, wrap(current, result.value, options));
+        } else if (result.kind === 'Failure') {
+          defered.push(current);
+          const childkeys = result.value;
 
-              // If the current depKey cannot be found in the graph, fail
-              if (!declaration) {
-                reject({
-                  kind: 'MissingDependency',
-                  message: `"${key}" required missing dependency "${depKey}"`
-                });
-                return;
-              }
+          for (const childkey of childkeys) {
+            const declaration = graph[childkey];
 
+            // If the current depKey cannot be found in the graph, fail
+            if (!declaration) {
+              return Promise.reject({
+                kind: 'MissingDependencyFailure',
+                message: `"${key}" required missing dependency "${childkey}"`
+              });
+            }
+
+            if (history.has(childkey)) {
               // If the current dependency has been visited on this path before
               // there is a circular dependency, fail
-              if (history.has(depKey)) {
-                reject({
-                  kind: 'CircularDependency',
-                  message: `"${key}" has circular dependency "${depKey}"`,
+              if (!handleCircular) {
+                return Promise.reject({
+                  kind: 'CircularDependencyFailure',
+                  message: `"${key}" has circular dependency "${childkey}"`,
                   value: {
                     history: Array.from(history)
                   }
                 });
-                return;
               }
-
-              unvisited.push({
-                history: new Set([...Array.from(history), key]),
-                key: depKey,
-                ...declaration
-              });
+              // Create a proxy and use that as a stand-in so that Circular Dependencies,
+              // can be resolved. This assumes that the dependecies are not needed for the
+              // creation of either value, as that would be impossible to resolve.
+              const controller = handleCircular({});
+              proxyPatches.push([declaration, controller]);
+              lookup.set(childkey, Promise.resolve(controller.proxy));
             }
-          }
-        }
-        // Unwind the defered as they should now all be resolveable
-        let deferedCurrent: DependencyNode;
 
-        if (defered.length) {
-          while (deferedCurrent = defered.pop()!) {
-            const result = tryFulfill(deferedCurrent, lookup);
-            const wrapped = wrap(deferedCurrent, result.value, options);
-            lookup.set(deferedCurrent.key,  wrapped);
+            unvisited.push({
+              history: new Set([...Array.from(history), key]),
+              key: childkey,
+              ...declaration
+            });
           }
         }
-        resolve(lookup.get(requestedKey));
-      });
+      }
+      // Unwind the defered as they should now all be resolveable
+      let deferedCurrent: DependencyNode;
+
+      if (defered.length) {
+        while (deferedCurrent = defered.pop()!) {
+          const result = tryFulfill(deferedCurrent, lookup);
+          const wrapped = wrap(deferedCurrent, result.value, options);
+          lookup.set(deferedCurrent.key,  wrapped);
+        }
+      }
+      const proxyPatchPromises: Promise<any>[] = [];
+
+      // If resolving circular dependencies, set all of the proxies to their respective correct values
+      if (handleCircular && proxyPatches.length) {
+        let i = proxyPatches.length - 1;
+
+        while (i--) {
+          const [declaration, controller] = proxyPatches[i];
+          const result = tryFulfill(declaration, lookup) as Success<Promise<any>>;
+          const promise = result.value;
+          promise.then(val => {
+            const result = controller.setProxyTarget(val);
+
+            if (result.kind !== 'Success') {
+              throw result;
+            }
+          });
+          proxyPatchPromises.push(promise);
+        }
+      }
+
+      return Promise
+        .all(proxyPatchPromises)
+        .then(() => lookup.get(requestedKey));
     },
     getSome(...keys) {
       return new Promise((resolve, reject) => {
@@ -232,6 +307,13 @@ export default function containerFactory(
         options = { ...defaultLibOpts, ...libOptions };
       }
       return container;
+    },
+    // Make the container promise-like, when these are called, otherwise deliberately lazy
+    then(onFulfill, onReject) {
+      return container.getAll().then(onFulfill, onReject);
+    },
+    catch(onReject) {
+      return container.then(undefined, onReject);
     }
   };
   return container;

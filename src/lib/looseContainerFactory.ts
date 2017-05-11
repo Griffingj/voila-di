@@ -1,13 +1,13 @@
+import { LooseGraph }    from '../index';
+import { GraphLookup }   from '../index';
 import ensureStrictGraph from './ensureStrictGraph';
 import containerFactory  from './containerFactory';
-import { Container }     from '../index';
-import { LooseGraph }    from '../index';
-import { Options }       from '../index';
-import { GraphLookup }   from '../index';
+import { Container }     from './containerFactory';
+import { Options }       from './containerFactory';
 
 export default function looseContainerFactory(
   graph: LooseGraph = {},
-  options?: Options,
+  options?: Partial<Options>,
   graphLookup?: GraphLookup): Container {
 
   const strictGraph = ensureStrictGraph(graph);
