@@ -13,13 +13,13 @@ import di from 'voila-di';
 const container = di();
 ```
 
-Configure a dependency graph and get a value
+Configure a dependency graph and get values
 
 ```javascript
 import di from 'voila-di';
 
 function getPromise(val) {
-  return new Promise(resolve => setTimeout(() => resolve(val), 50));
+  return new Promise<any>(resolve => setTimeout(() => resolve(val), 50));
 }
 
 const container = di({
@@ -36,12 +36,24 @@ const container = di({
   // Or a non-function value
   d: 5,
   // Or do arbitrary imperative tasks
-  e: () => console.log('e done before b')
+  e: () => console.log('e done before b'),
+  // And it works with async/await
+  async f() {
+    const val = await getPromise(5);
+    return val + 1;
+  }
 });
 
+// It will lazily resolve only the transitive dependencies of the requested key
 container.get('a').then(console.log);
 // => e done before b
 // => 13
+
+// Or it can eagerly load the entire graph, 
+// Note: will only eagerly load if container.then or container.catch is called
+const values = await container;
+console.log(values);
+// => { d: 5, e: undefined, b: 2, c: 5, f: 6, a: 13 }
 ```
 
 Configure a dependency graph and ensure all the tasks are triggered once
@@ -71,6 +83,37 @@ container2.getAll().then(console.log);
 // => b done after c
 // => a done after b and c
 // => { d: 5, e: 6, c: undefined, b: undefined, a: undefined }
+```
+
+Resolve a graph with resolvable circular dependencies
+
+```javascript
+import di from 'voila-di';
+
+const container = di({
+  a(b) {
+    return {
+      print: () => 1 + b.provide,
+      provide: 1
+    };
+  },
+  b(c) {
+    return {
+      print: () => 1 + c.provide,
+      provide: 2
+    };
+  },
+  c(a) {
+    return {
+      print: () => 1 + a.provide,
+      provide: 3
+    };
+  }
+});
+
+const { a, b, c } = await container;
+console.log(`a: ${a.print()}, b: ${b.print()}, c: ${c.print()}`);
+// => a: 3, b: 4, c: 2
 ```
 
 Inspect a tree view of all of the dependencies in the graph using `topiary` to pretty print the tree

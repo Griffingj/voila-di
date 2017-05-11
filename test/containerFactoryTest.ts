@@ -40,7 +40,7 @@ describe('containerFactory', () => {
         });
 
         describe('when handleCircular using default', () => {
-          it('resolves resolveable circular dependency', async () => {
+          it('resolves resolvable circular dependency', async () => {
             const { a, b, c } = await looseFactory(Fixtures.simpleCircularResolve);
             expect(a.do()).to.eql(3);
             expect(b.do()).to.eql(4);
