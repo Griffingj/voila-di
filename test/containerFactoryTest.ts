@@ -65,6 +65,19 @@ describe('containerFactory', () => {
           expect(a).to.eql(20);
         });
 
+        it('rejects a chain of function declarations with a sync throw', async () => {
+          const error = {};
+
+          const promise = looseFactory({
+            ...Fixtures.funcSingleFile,
+            c: (d) => { throw error; },
+          });
+
+          return promise.catch(thrown => {
+            expect(thrown).to.eql(error);
+          });
+        });
+
         it('resolves when a key has an undefined return value', async () => {
           const { a } = await looseFactory(Fixtures.funcSingleFileUndefinedVal);
           expect(a).to.eql(15);

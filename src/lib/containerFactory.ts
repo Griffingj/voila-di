@@ -1,4 +1,3 @@
-import { Declaration }     from '../index';
 import { DependencyNode }  from '../index';
 import { GraphLookup }     from '../index';
 import { LooseGraph }      from '../index';
@@ -50,46 +49,6 @@ export type InternalFailure<T> = {
   value: T;
 }
 
-type FulfillResult = Success<Promise<any>> | InternalFailure<string[]>;
-
-function tryFulfill(declaration: Declaration, lookup: GraphLookup): FulfillResult {
-  const unfulfillable: string[] = [];
-  const activeDeps: Promise<any>[] = [];
-  const { dependencies, provider } = declaration;
-
-  for (const key of dependencies!) {
-    const promise = lookup.get(key);
-
-    if (promise === undefined) {
-      unfulfillable.push(key);
-    } else {
-      activeDeps.push(promise);
-    }
-  }
-
-  // If the current node's dependencies are all in the lookup,
-  // generate the promise and set it in the lookup
-  const value = Promise
-    .all(activeDeps)
-    .then(results => provider.apply(undefined, results));
-
-  if (!unfulfillable.length) {
-    return { kind: 'Success', value };
-  }
-
-  return {
-    kind: 'Failure',
-    value: unfulfillable
-  };
-}
-
-// Ensure that the value from a provider is postProcessed and wrapped in a promise
-function wrap(node, value, options) {
-  return Promise
-    .resolve(value)
-    .then(val => options.postProcess(node, value));
-}
-
 export default function containerFactory(
   graph: StrictGraph = {},
   libOptions?: Partial<Options>,
@@ -100,6 +59,58 @@ export default function containerFactory(
     ...libOptions
   };
   const lookup: GraphLookup = graphLookup ? new Map(graphLookup) : new Map();
+
+  type FulfillResult = Success<Promise<any>> | InternalFailure<string[]>;
+
+  function tryFulfill(node: DependencyNode): FulfillResult {
+    const unfulfillable: string[] = [];
+    const activeDeps: Promise<any>[] = [];
+    const { dependencies, provider } = node;
+
+    for (const key of dependencies!) {
+      const promise = lookup.get(key);
+
+      if (promise === undefined) {
+        unfulfillable.push(key);
+      } else {
+        activeDeps.push(promise);
+      }
+    }
+
+    if (!unfulfillable.length) {
+      // If the current node's dependencies are all in the lookup,
+      // generate the promise and set it in the lookup
+      const value = Promise
+        .all(activeDeps)
+        .then(results => wrap(node, provider, results));
+
+      return { kind: 'Success', value };
+    }
+
+    return {
+      kind: 'Failure',
+      value: unfulfillable
+    };
+  }
+
+  // Ensure that the value from a provider is postProcessed,
+  // wrapped in a promise, and guard against sync errors being
+  // thrown
+  function wrap(node: DependencyNode, provider, args?) {
+    let value;
+
+    try {
+      value = provider(...args);
+    } catch (error) {
+      return Promise.reject(error);
+    }
+    let promise = value;
+
+    if (typeof (value && value.then) !== 'function') {
+      promise = Promise.resolve(value);
+    }
+    return promise.then(val => options.postProcess(node, value));
+  }
 
   const container: Container = {
     merge(otherGraph: LooseGraph) {
@@ -153,8 +164,8 @@ export default function containerFactory(
         return maybePromise;
       }
 
-      // This is used in the resolution of circular dependencies if configured
-      type ProxyPatch = [Declaration, ProxyController];
+      // This is used in the resolution of circular dependencies
+      type ProxyPatch = [DependencyNode, ProxyController];
       const proxyPatches: ProxyPatch[] = [];
       const { handleCircular } = options;
 
@@ -180,15 +191,15 @@ export default function containerFactory(
 
         // If the current node has no dependencies
         if (!dependencies || !dependencies.length) {
-          const wrapped = wrap(current, provider(), options);
+          const wrapped = wrap(current, provider);
           lookup.set(key, wrapped);
           continue;
         }
         // Otherwise try to fulfill the declaration by checking each dependency
-        const result = tryFulfill(current, lookup);
+        const result = tryFulfill(current);
 
         if (result.kind === 'Success') {
-          lookup.set(key, wrap(current, result.value, options));
+          lookup.set(key, result.value);
         } else if (result.kind === 'Failure') {
           defered.push(current);
           const childkeys = result.value;
@@ -206,7 +217,7 @@ export default function containerFactory(
 
             if (history.has(childkey)) {
               // If the current dependency has been visited on this path before
-              // there is a circular dependency, fail
+              // there is a circular dependency, fail if configured to do so.
               if (!handleCircular) {
                 return Promise.reject({
                   kind: 'CircularDependencyFailure',
@@ -220,7 +231,14 @@ export default function containerFactory(
               // can be resolved. This assumes that the dependecies are not needed for the
               // creation of either value, as that would be impossible to resolve.
               const controller = handleCircular({});
-              proxyPatches.push([declaration, controller]);
+              proxyPatches.push([
+                {
+                  ...declaration,
+                  history,
+                  key: childkey
+                },
+                controller
+              ]);
               lookup.set(childkey, Promise.resolve(controller.proxy));
             }
 
@@ -237,9 +255,9 @@ export default function containerFactory(
 
       if (defered.length) {
         while (deferedCurrent = defered.pop()!) {
-          const result = tryFulfill(deferedCurrent, lookup);
-          const wrapped = wrap(deferedCurrent, result.value, options);
-          lookup.set(deferedCurrent.key,  wrapped);
+          // tryFulfill cannot fail at this point
+          const result = tryFulfill(deferedCurrent) as Success<Promise<any>>;
+          lookup.set(deferedCurrent.key, result.value);
         }
       }
       const proxyPatchPromises: Promise<any>[] = [];
@@ -249,9 +267,11 @@ export default function containerFactory(
         let i = proxyPatches.length - 1;
 
         while (i--) {
-          const [declaration, controller] = proxyPatches[i];
-          const result = tryFulfill(declaration, lookup) as Success<Promise<any>>;
-          const promise = result.value;
+          const [node, controller] = proxyPatches[i];
+
+          // This cannot return undefined at this point
+          const promise = lookup.get(node.key)!;
+
           promise.then(val => {
             const result = controller.setProxyTarget(val);
 
