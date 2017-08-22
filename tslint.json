@@ -8,6 +8,7 @@
      "no-string-literal": false,
      "one-line": [false],
      "no-conditional-assignment": false,
-     "switch-default": false
+     "switch-default": false,
+     "align": false
   }
 }

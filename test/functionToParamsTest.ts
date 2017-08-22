@@ -15,8 +15,17 @@ describe('functionToParams', () => {
     done();
   });
 
-  it('parses a named function with comments', done => {
+  it('parses a named function with multi-line comments', done => {
     function func(one, /* two, */three) {}
+    const result = functionToParams(func);
+    expect(result).to.eql(['one', 'three']);
+    done();
+  });
+
+  it('parses a named function with end-of-line comments', done => {
+    function func(one,
+      // two,
+      three) {}
     const result = functionToParams(func);
     expect(result).to.eql(['one', 'three']);
     done();

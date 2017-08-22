@@ -1,5 +1,5 @@
 const signatureRegExp = /^[^(]*\(([^)]*)\)/;
-const commentRegExp = /\/\*[^]*?\*\//g;
+const commentRegExp = /\/\*[\s\S]*?\*\/|\/\/.*/g;
 const paramRegExp = /([^\s,{=]+)/;
 
 export default function functionToParams(func: Function): string[] {
