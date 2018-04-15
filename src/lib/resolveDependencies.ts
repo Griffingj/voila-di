@@ -1,11 +1,13 @@
-import { DependencyNode }  from '../index';
-import { StrictGraph }     from '../index';
-import { Declaration }     from '../index';
-import { Success }         from '../index';
-import { ProxyController } from './proxify';
-import { Proxify }         from './proxify';
+import { DependencyNode }   from '../index';
+import { StrictGraph }      from '../index';
+import { Declaration }      from '../index';
+import { Success }          from '../index';
+import { ProxyController }  from './proxify';
+import { HandleCircular }   from './containerFactory';
+import makeSinglyLinkedList from './singlyLinkedList';
 
 export type PostProcess = (node: DependencyNode, value: any) => any;
+export type ProxyPatches = [DependencyNode, ProxyController][];
 
 export type Wrap = (
   node: DependencyNode,
@@ -76,21 +78,21 @@ function tryFulfill(
 
 export type ResolveDependenciesResult = {
   kind: 'Success',
-  proxyPatches: [DependencyNode, ProxyController][]
+  proxyPatches: ProxyPatches
 } | {
   kind: 'MissingDependencyFailure',
   message: string
 } | {
   kind: 'CircularDependencyFailure',
   message: string,
-  value: { history: string[] }
+  value: { history: Set<string> }
 };
 
 export type ResolveDependencies = (
   rootKey: string,
   rootDeclaration: Declaration,
   declarationLookup: StrictGraph,
-  handleCircular: Proxify,
+  handleCircular: HandleCircular,
   postProcess: PostProcess,
   lookup: Map<string, any>) => ResolveDependenciesResult;
 
@@ -114,12 +116,13 @@ const resolveDependencies: ResolveDependencies = (
     key: rootKey,
     ...rootDeclaration
   };
-  const unvisited: DependencyNode[] = [root];
-  const defered: DependencyNode[] = [];
 
+  const unvisited = makeSinglyLinkedList<DependencyNode>();
+  unvisited.add(root);
+  const defered = makeSinglyLinkedList<DependencyNode>();
   let current: DependencyNode;
 
-  while (current = unvisited.pop()!) {
+  while (current = unvisited.remove()!) {
     const {
       dependencies,
       history,
@@ -139,7 +142,7 @@ const resolveDependencies: ResolveDependencies = (
     if (result.kind === 'Success') {
       lookup.set(key, result.value);
     } else if (result.kind === 'Failure') {
-      defered.push(current);
+      defered.add(current);
       const childkeys = result.value;
 
       for (const childkey of childkeys) {
@@ -160,9 +163,7 @@ const resolveDependencies: ResolveDependencies = (
             return {
               kind: 'CircularDependencyFailure',
               message: `"${key}" has circular dependency "${childkey}"`,
-              value: {
-                history: Array.from(history)
-              }
+              value: { history }
             };
           }
           // Create a proxy and use that as a stand-in so that Circular Dependencies,
@@ -172,16 +173,18 @@ const resolveDependencies: ResolveDependencies = (
           proxyPatches.push([
             {
               ...declaration,
-              history,
+              history: new Set(history),
               key: childkey
             },
             controller
           ]);
           lookup.set(childkey, Promise.resolve(controller.proxy));
         }
+        const forkedHistory = new Set(history);
+        forkedHistory.add(key);
 
-        unvisited.push({
-          history: new Set([...Array.from(history), key]),
+        unvisited.add({
+          history: forkedHistory,
           key: childkey,
           ...declaration
         });
@@ -191,8 +194,8 @@ const resolveDependencies: ResolveDependencies = (
   // Work down the defered stack as they should now be resolveable in order
   let deferedCurrent: DependencyNode;
 
-  if (defered.length) {
-    while (deferedCurrent = defered.pop()!) {
+  if (defered.size()) {
+    while (deferedCurrent = defered.remove()!) {
       // tryFulfill cannot fail at this point
       const result = tryFulfill(deferedCurrent, lookup, postProcess) as Success<Promise<any>>;
       lookup.set(deferedCurrent.key, result.value);

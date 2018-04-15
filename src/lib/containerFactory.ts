@@ -1,18 +1,21 @@
-import { DependencyNode }  from '../index';
-import { GraphLookup }     from '../index';
-import { LooseGraph }      from '../index';
-import { Result }          from '../index';
-import { StrictGraph }     from '../index';
-import ensureStrictGraph   from './ensureStrictGraph';
-import strictGraphToTree   from './strictGraphToTree';
-import resultFactory       from './resultFactory';
-import proxify             from './proxify';
-import { Proxify }         from './proxify';
-import resolveDependencies from './resolveDependencies';
+import { DependencyNode }   from '../index';
+import { GraphLookup }      from '../index';
+import { LooseGraph }       from '../index';
+import { Result }           from '../index';
+import { StrictGraph }      from '../index';
+import ensureStrictGraph    from './ensureStrictGraph';
+import strictGraphToTree    from './strictGraphToTree';
+import resultFactory        from './resultFactory';
+import proxify              from './proxify';
+import { Proxify }          from './proxify';
+import resolveDependencies  from './resolveDependencies';
+import { ProxyPatches }     from './resolveDependencies';
+
+export type HandleCircular = Proxify | false
 
 export type Options = {
   failOnClobber: boolean;
-  handleCircular: Proxify | false;
+  handleCircular: HandleCircular;
   postProcess: (node: DependencyNode, value: any) => any;
 }
 
@@ -43,6 +46,34 @@ const defaultLibOpts: Options = {
   handleCircular: proxify,
   postProcess: (node: DependencyNode, value: any) => value
 };
+
+function patchCircular(
+  lookup: Map<string, any>,
+  handleCircular: HandleCircular,
+  proxyPatches: ProxyPatches) {
+
+  const proxyPatchPromises: Promise<any>[] = [];
+
+  // If resolving circular dependencies, set all of the proxies to their respective correct values
+  if (handleCircular && proxyPatches.length) {
+    let i = proxyPatches.length - 1;
+
+    while (i--) {
+      const [node, controller] = proxyPatches[i];
+      const promise = lookup.get(node.key)!;
+
+      promise.then(val => {
+        const result = controller.setProxyTarget(val);
+
+        if (result.kind !== 'Success') {
+          throw result;
+        }
+      });
+      proxyPatchPromises.push(promise);
+    }
+  }
+  return Promise.all(proxyPatchPromises);
+}
 
 export default function containerFactory(
   graph: StrictGraph = {},
@@ -106,49 +137,31 @@ export default function containerFactory(
       if (maybePromise) {
         return maybePromise;
       }
-      const { handleCircular } = options;
+      const { handleCircular, postProcess } = options;
 
-      const resolveResult = resolveDependencies(
-        requestedKey,
+      const resolveResult = resolveDependencies(requestedKey,
         maybeDeclaration,
         graph,
-        proxify,
-        options.postProcess,
+        handleCircular,
+        postProcess,
         // Will mutate
         lookup);
 
-      let proxyPatches;
+      let proxyPatches: ProxyPatches = [];
 
       switch (resolveResult.kind) {
         case 'MissingDependencyFailure':
         case 'CircularDependencyFailure':
           return Promise.reject(resolveResult);
-        case 'Success': proxyPatches = resolveResult.proxyPatches;
-      }
-      const proxyPatchPromises: Promise<any>[] = [];
-
-      // If resolving circular dependencies, set all of the proxies to their respective correct values
-      if (handleCircular && proxyPatches.length) {
-        let i = proxyPatches.length - 1;
-
-        while (i--) {
-          const [node, controller] = proxyPatches[i];
-          const promise = lookup.get(node.key)!;
-
-          promise.then(val => {
-            const result = controller.setProxyTarget(val);
-
-            if (result.kind !== 'Success') {
-              throw result;
-            }
-          });
-          proxyPatchPromises.push(promise);
+        case 'Success': {
+          proxyPatches = resolveResult.proxyPatches;
         }
       }
 
-      return Promise
-        .all(proxyPatchPromises)
-        .then(() => lookup.get(requestedKey));
+      if (handleCircular) {
+        return patchCircular(lookup, handleCircular, proxyPatches).then(() => lookup.get(requestedKey));
+      }
+      return lookup.get(requestedKey)!;
     },
     getSome(...keys) {
       const mappedValues = {};
