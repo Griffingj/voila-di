@@ -13,7 +13,7 @@ export function isStrict(declaration) {
 }
 
 describe('ensureStrictGraph', () => {
-  it('coerces a loose graph into a strict one', done => {
+  it('coerces a loose graph into a strict one', () => {
     const maybeStrict = ensureStrictGraph(Fixtures.mixed);
     let nonStrict = false;
 
@@ -23,6 +23,5 @@ describe('ensureStrictGraph', () => {
       }
     }
     expect(nonStrict).to.be.false;
-    done();
   });
 });

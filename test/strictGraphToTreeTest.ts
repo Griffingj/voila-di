@@ -7,9 +7,8 @@ export const lab = script();
 const { describe, it } = lab;
 
 describe('strictGraphToTree', () => {
-  it('converts a StrictGraph structure into a tree', done => {
+  it('converts a StrictGraph structure into a tree', () => {
     const result = strictGraphToTree(Fixtures.strictSingleFile);
     expect(result).to.deep.equal(Fixtures.strictSingleFileTree);
-    done();
   });
 });

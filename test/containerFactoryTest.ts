@@ -11,9 +11,8 @@ const { describe, it } = lab;
 
 describe('containerFactory', () => {
   describe('looseFactory', () => {
-    it('returns a promise that resolves to a container, with a well formed graph', done => {
+    it('returns a promise that resolves to a container, with a well formed graph', () => {
       expect(looseFactory()).to.be.ok;
-      done();
     });
 
     describe('postProcess option', () => {
@@ -222,10 +221,9 @@ describe('containerFactory', () => {
             });
         });
 
-        it('rejects on key clobber when configured', done => {
+        it('rejects on key clobber when configured', () => {
           const result = looseFactory({ a: 20 }).merge(Fixtures.broadShortPromises);
           expect(result.kind).to.eql('KeyClobberFailure');
-          done();
         });
 
         it('allows key clobber when configured', () => {
@@ -247,10 +245,9 @@ describe('containerFactory', () => {
             .then(val => expect(val).to.eql(2));
         });
 
-        it('rejects on key clobber when configured', done => {
+        it('rejects on key clobber when configured', () => {
           const result = looseFactory({ a: 20 }).mergeStrict(Fixtures.strictPartialLeft);
           expect(result.kind).to.eql('KeyClobberFailure');
-          done();
         });
 
         it('allows key clobber when configured', () => {
@@ -263,27 +260,24 @@ describe('containerFactory', () => {
       });
 
       describe('#getGraph', () => {
-        it('returns a graph identical to the one used to create the container', done => {
+        it('returns a graph identical to the one used to create the container', () => {
           const graph = strictFactory(Fixtures.strictSingleFile).getGraph();
           expect(graph).to.deep.equal(Fixtures.strictSingleFile);
-          done();
         });
       });
 
       describe('#getTree', () => {
-        it('returns a graph identical to the one used to create the container', done => {
+        it('returns a graph identical to the one used to create the container', () => {
           const tree = strictFactory(Fixtures.strictSingleFile).getTree();
           expect(tree).to.deep.equal(Fixtures.strictSingleFileTree);
-          done();
         });
       });
     });
   });
 
   describe('strict containerFactory', () => {
-    it('returns a promise that resolves to a container', done => {
+    it('returns a promise that resolves to a container', () => {
       expect(strictFactory()).to.be.ok;
-      done();
     });
 
     describe('the returned container', () => {

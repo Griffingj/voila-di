@@ -7,38 +7,34 @@ const { describe, it } = lab;
 
 describe('singlyLinkedList', () => {
   describe('#peek', () => {
-    it('returns the value at the start of the sll', done => {
+    it('returns the value at the start of the sll', () => {
       const sll = makeSinglyLinkedList([1, 2, 3, 4, 5]);
       expect(sll.peek()).to.eql(1);
-      done();
     });
   });
 
   describe('#add', () => {
-    it('includes values at the start of the sll', done => {
+    it('includes values at the start of the sll', () => {
       const sll1 = makeSinglyLinkedList([1, 2, 3, 4, 5]).add(0);
       expect(sll1.peek()).to.eql(0);
-      done();
     });
   });
 
   describe('#remove', () => {
-    it('removes items from the start of the list', done => {
+    it('removes items from the start of the list', () => {
       const sll = makeSinglyLinkedList([1, 2, 3, 4, 5]);
       sll.remove();
       expect(sll.peek()).to.eql(2);
-      done();
     });
   });
 
   describe('#size', () => {
-    it('returns the size of singly linked list', done => {
+    it('returns the size of singly linked list', () => {
       const sll = makeSinglyLinkedList([1, 2, 3, 4, 5]);
       expect(sll.size()).to.eql(5);
-      done();
     });
 
-    it('returns the size after mutations', done => {
+    it('returns the size after mutations', () => {
       const sll1 = makeSinglyLinkedList([1, 2, 3, 4, 5])
         .add(6)
         .add(7);
@@ -53,7 +49,6 @@ describe('singlyLinkedList', () => {
 
       sll2.remove();
       expect(sll2.size()).to.eql(8);
-      done();
     });
   });
 });
