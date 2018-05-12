@@ -1,6 +1,5 @@
 # Voilà, Dependency Injection
 [![Build Status](https://travis-ci.org/Griffingj/voila-di.svg?branch=master)](https://travis-ci.org/Griffingj/voila-di)
-[![Code Climate](https://codeclimate.com/github/Griffingj/voila-di/badges/gpa.svg)](https://codeclimate.com/github/Griffingj/voila-di)
 [![Test Coverage](https://codeclimate.com/github/Griffingj/voila-di/badges/coverage.svg)](https://codeclimate.com/github/Griffingj/voila-di/coverage)
 
 A dependency injection library for async utility, modularity, and testability
@@ -49,7 +48,7 @@ container.get('a').then(console.log);
 // => e done before b
 // => 13
 
-// Or it can eagerly load the entire graph, 
+// Or it can eagerly load the entire graph,
 // Note: will only eagerly load if container.then or container.catch is called
 const values = await container;
 console.log(values);
