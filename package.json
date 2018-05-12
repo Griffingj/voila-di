@@ -1,6 +1,6 @@
 {
   "name": "voila-di",
-  "version": "3.0.1",
+  "version": "3.0.2",
   "description": "A library for javascript dependency injection",
   "repository": {
     "type": "git",
