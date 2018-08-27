@@ -14,3 +14,6 @@ addons:
 branches:
   except:
     - g3_v2_0
+
+after_script:
+  - npm run report-cov

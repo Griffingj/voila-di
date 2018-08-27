@@ -7,21 +7,23 @@ const { describe, it } = lab;
 
 describe('singlyLinkedList', () => {
   describe('#peek', () => {
-    it('returns the value at the start of the sll', () => {
-      const sll = makeSinglyLinkedList([1, 2, 3, 4, 5]);
-      expect(sll.peek()).to.eql(1);
+    it('returns the value at the end of the sll', () => {
+      const sll = makeSinglyLinkedList<number>();
+      expect(sll.peek()).to.eql(null);
+      sll.add(1).add(2).add(3).add(4).add(5);
+      expect(sll.peek()).to.eql(5);
     });
   });
 
   describe('#add', () => {
-    it('includes values at the start of the sll', () => {
+    it('includes values at the end of the sll', () => {
       const sll1 = makeSinglyLinkedList([1, 2, 3, 4, 5]).add(0);
       expect(sll1.peek()).to.eql(0);
     });
   });
 
   describe('#remove', () => {
-    it('removes items from the start of the list', () => {
+    it('removes items from the end of the list', () => {
       const sll = makeSinglyLinkedList([1, 2, 3, 4, 5]);
       sll.remove();
       expect(sll.peek()).to.eql(2);

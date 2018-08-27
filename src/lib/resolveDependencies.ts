@@ -7,7 +7,7 @@ import { ProxyController } from './proxify';
 import makeSinglyLinkedList from './singlyLinkedList';
 
 export type PostProcess = (node: DependencyNode, value: any) => any;
-export type ProxyPatches = Array<[DependencyNode, ProxyController]>;
+export type ProxyPatches = Array<[DependencyNode, ProxyController<any>]>;
 
 export type Wrap = (
   node: DependencyNode,
@@ -105,7 +105,7 @@ const resolveDependencies: ResolveDependencies = (
   lookup) => {
 
   // This is used in the resolution of circular dependencies
-  type ProxyPatch = [DependencyNode, ProxyController];
+  type ProxyPatch = [DependencyNode, ProxyController<any>];
   const proxyPatches: ProxyPatch[] = [];
 
   // Use iterative tree search to resolve the tree
@@ -140,7 +140,7 @@ const resolveDependencies: ResolveDependencies = (
 
     if (result.kind === 'Success') {
       lookup.set(key, result.value);
-    } else if (result.kind === 'Failure') {
+    } else {
       defered.add(current);
       const childkeys = result.value;
 

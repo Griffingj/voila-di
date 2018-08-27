@@ -166,6 +166,25 @@ describe('containerFactory', () => {
         });
       });
 
+      describe('#inspectOptions', () => {
+        it('returns the current options', () => {
+          const options = { failOnClobber: false };
+          const container = looseFactory(Fixtures.broadShortPromises, options);
+          container.setOptions({ failOnClobber: true });
+          expect(container.inspectOptions().failOnClobber).to.be.true;
+        });
+      });
+
+      describe('#setOptions', () => {
+        it('passing nothing resets the options', () => {
+          const options = { failOnClobber: false };
+          const container = looseFactory(Fixtures.broadShortPromises, options);
+          container.setOptions({ failOnClobber: true });
+          container.setOptions();
+          expect(container.inspectOptions().failOnClobber).to.be.false;
+        });
+      });
+
       describe('#getAll', () => {
         it('resolves all dependencies', () => {
           return looseFactory(Fixtures.broadShortPromises)

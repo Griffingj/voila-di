@@ -38,7 +38,8 @@ export interface Container {
   getGraph(): StrictGraph;
   then(onFulfill: OnFulfill, onReject?: OnReject): Promise<any>;
   catch(onReject: OnReject): Promise<any>;
-  setOptions(options: Partial<Options>): Container;
+  setOptions(options?: Partial<Options>): Container;
+  inspectOptions(): Partial<Options>;
 }
 
 const defaultLibOpts: Options = {
@@ -102,7 +103,7 @@ export default function containerFactory(
 
         for (const key of keys) {
           if (key in newGraph) {
-            return resultFactory(undefined, {
+            return resultFactory<Container>(undefined, {
               kind: 'KeyClobberFailure',
               message: `"${key}" overloaded by merging graph`
             });
@@ -116,10 +117,7 @@ export default function containerFactory(
         };
       }
 
-      return resultFactory({
-        kind: 'Success',
-        value: containerFactory(newGraph, options, lookup)
-      });
+      return resultFactory(containerFactory(newGraph, options, lookup));
     },
     get(requestedKey) {
       // If the key cannot be found in the graph, fail
@@ -159,7 +157,8 @@ export default function containerFactory(
       }
 
       if (handleCircular) {
-        return patchCircular(lookup, handleCircular, proxyPatches).then(() => lookup.get(requestedKey));
+        return patchCircular(lookup, handleCircular, proxyPatches)
+          .then(() => lookup.get(requestedKey));
       }
       return lookup.get(requestedKey)!;
     },
@@ -198,6 +197,9 @@ export default function containerFactory(
         options = { ...defaultLibOpts, ...libOptions };
       }
       return container;
+    },
+    inspectOptions() {
+      return { ...options };
     },
     // Make the container promise-like, when these are called, otherwise deliberately lazy
     then(onFulfill, onReject) {

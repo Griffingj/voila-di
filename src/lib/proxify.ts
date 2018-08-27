@@ -1,42 +1,30 @@
 import { Result } from '../index';
+import { isObject } from './objects';
 import resultFactory from './resultFactory';
 
-export interface ProxyController {
-  proxy: any;
-  setProxyTarget(target: any): Result<null>;
+export interface ProxyController<T> {
+  proxy: T;
+  setProxyTarget(target: T): Result<T>;
 }
 
-export type Proxify = (something: any) => ProxyController;
+export type Proxify = (something: any) => ProxyController<any>;
 
-function isObject(value) {
-  const type = typeof value;
-  return value != null && (type === 'object' || type === 'function');
-}
+export default function proxify<T extends {}>(anObject: T): ProxyController<T> {
+  const proxy: T = {} as any;
 
-function proxyFactory(something: any) {
-  const proxy = {};
-  Object.setPrototypeOf(proxy, something);
-  return proxy;
-}
-
-export default function proxify(something: any): ProxyController {
-  const proxy = proxyFactory(something);
-
-  return {
+  const controller = {
     proxy,
     setProxyTarget(target) {
       if (!isObject(target)) {
         return resultFactory(undefined, {
           kind: 'InvalidProxyTargetFailure',
-          message: `Value must be an object to be proxified "${something}" is not an object.`
-        });
+          message: `The target of a proxy must be an object.`
+        }) as any;
       }
       Object.setPrototypeOf(proxy, target);
-
-      return resultFactory({
-        kind: 'Success',
-        value: null
-      });
+      return resultFactory(proxy);
     }
   };
+  controller.setProxyTarget(anObject).orThrow();
+  return controller;
 }

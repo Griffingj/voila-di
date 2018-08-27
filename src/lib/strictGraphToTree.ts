@@ -13,7 +13,7 @@ export default function strictGraphToTree(graph: StrictGraph): TreeNode {
   function treeify(name: string): TreeNode {
     return {
       name,
-      children: (lookup.get(name) || []).map(treeify)
+      children: (lookup.get(name)!).map(treeify)
     };
   }
 

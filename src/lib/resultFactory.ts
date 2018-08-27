@@ -1,19 +1,20 @@
-import { Success } from '../index';
+import { Result } from '../index';
 
-export default function resultFactory<T>(success: Success<T> | undefined, failure?: any) {
+export default function resultFactory<T>(successValue: T | undefined, failure?: any): Result<T> {
   const partial = {
     orThrow(): T {
       if (failure) {
         throw failure;
       }
-      return success!.value;
+      return successValue!;
     }
   };
 
-  if (success) {
+  if (successValue) {
     return {
       ...partial,
-      ...success
+      kind: 'Success',
+      value: successValue
     };
   }
 
