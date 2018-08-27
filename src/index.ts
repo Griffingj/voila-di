@@ -1,8 +1,9 @@
-import containerFactory      from './lib/containerFactory';
+import containerFactory from './lib/containerFactory';
+import ensureStrictGraph from './lib/ensureStrictGraph';
+import { CommonFunction } from './lib/functions';
+import functionToParams from './lib/functionToParams';
 import looseContainerFactory from './lib/looseContainerFactory';
-import ensureStrictGraph     from './lib/ensureStrictGraph';
-import strictGraphToTree     from './lib/strictGraphToTree';
-import functionToParams      from './lib/functionToParams';
+import strictGraphToTree from './lib/strictGraphToTree';
 
 export default looseContainerFactory;
 
@@ -13,10 +14,10 @@ export {
   containerFactory as strictFactory
 };
 
-export type Declaration = {
+export interface Declaration {
   dependencies?: string[];
-  provider: Function;
-};
+  provider: CommonFunction;
+}
 
 export type DependencyNode = Declaration & {
   history: Set<string>
@@ -25,18 +26,14 @@ export type DependencyNode = Declaration & {
 
 export type GraphLookup = Map<string, Promise<any>>;
 
-export type LooseGraph = {
-  [key: string]: any
-};
+export interface StrictGraph {
+  [key: string]: Declaration;
+}
 
-export type StrictGraph = {
-  [key: string]: Declaration
-};
-
-export type Success<T> = {
+export interface Success<T> {
   kind: 'Success';
   value: T;
-};
+}
 
 export type FailureKind =
   'CircularDependencyFailure' |
@@ -44,9 +41,9 @@ export type FailureKind =
   'KeyClobberFailure' |
   'InvalidProxyTargetFailure';
 
-export type Failure = {
-  kind: FailureKind
-  message: string
+export interface Failure {
+  kind: FailureKind;
+  message: string;
 }
 
 export type Result<T> = (Success<T> | Failure) & {

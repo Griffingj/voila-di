@@ -1,9 +1,9 @@
-export type SinglyLinkedListNode<T> = {
+export interface SinglyLinkedListNode<T> {
   next: SinglyLinkedListNode<T> | null;
   value: T;
-};
+}
 
-export type SinglyLinkedList<T> = {
+export interface SinglyLinkedList<T> {
   peek(): T | null;
   add(value: T): SinglyLinkedList<T>;
   remove(): T | null;

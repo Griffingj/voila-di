@@ -1,13 +1,13 @@
-import { DependencyNode }   from '../index';
-import { StrictGraph }      from '../index';
-import { Declaration }      from '../index';
-import { Success }          from '../index';
-import { ProxyController }  from './proxify';
-import { HandleCircular }   from './containerFactory';
+import { DependencyNode } from '../index';
+import { Declaration } from '../index';
+import { Success } from '../index';
+import { StrictGraph } from '../index';
+import { HandleCircular } from './containerFactory';
+import { ProxyController } from './proxify';
 import makeSinglyLinkedList from './singlyLinkedList';
 
 export type PostProcess = (node: DependencyNode, value: any) => any;
-export type ProxyPatches = [DependencyNode, ProxyController][];
+export type ProxyPatches = Array<[DependencyNode, ProxyController]>;
 
 export type Wrap = (
   node: DependencyNode,
@@ -15,7 +15,7 @@ export type Wrap = (
   postProcess: PostProcess,
   args?) => Promise<any>;
 
-export type InternalFailure<T> = {
+export interface InternalFailure<T> {
   kind: 'Failure';
   value: T;
 }
@@ -24,19 +24,18 @@ export type InternalFailure<T> = {
 // wrapped in a promise, and guard against sync errors being
 // thrown
 const wrap: Wrap = (node, provider, postProcess, args) => {
-  let value;
+  let maybePromise;
 
   try {
-    value = provider(...args);
+    maybePromise = provider(...args);
   } catch (error) {
     return Promise.reject(error);
   }
-  let promise = value;
 
-  if (typeof (value && value.then) !== 'function') {
-    promise = Promise.resolve(value);
+  if (typeof (maybePromise && maybePromise.then) !== 'function') {
+    maybePromise = Promise.resolve(maybePromise);
   }
-  return promise.then(val => postProcess(node, value));
+  return maybePromise.then(value => postProcess(node, value));
 };
 
 type FulfillResult = Success<Promise<any>> | InternalFailure<string[]>;
@@ -47,7 +46,7 @@ function tryFulfill(
   postProcess: PostProcess): FulfillResult {
 
   const unfulfillable: string[] = [];
-  const activeDeps: Promise<any>[] = [];
+  const activeDeps: Array<Promise<any>> = [];
   const { dependencies, provider } = node;
 
   for (const key of dependencies!) {
@@ -65,7 +64,7 @@ function tryFulfill(
     // generate the promise and set it in the lookup
     const value = Promise
       .all(activeDeps)
-      .then(results => wrap(node, provider, postProcess, results));
+      .then((results) => wrap(node, provider, postProcess, results));
 
     return { kind: 'Success', value };
   }

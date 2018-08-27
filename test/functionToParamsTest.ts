@@ -1,7 +1,7 @@
 /* tslint:disable:no-empty */
 /* tslint:disable:whitespace */
-import { script }       from 'lab';
-import { expect }       from 'chai';
+import { expect } from 'chai';
+import { script } from 'lab';
 import functionToParams from '../src/lib/functionToParams';
 
 export const lab = script();

@@ -1,35 +1,35 @@
-import { DependencyNode }   from '../index';
-import { GraphLookup }      from '../index';
-import { LooseGraph }       from '../index';
-import { Result }           from '../index';
-import { StrictGraph }      from '../index';
-import ensureStrictGraph    from './ensureStrictGraph';
-import strictGraphToTree    from './strictGraphToTree';
-import resultFactory        from './resultFactory';
-import proxify              from './proxify';
-import { Proxify }          from './proxify';
-import resolveDependencies  from './resolveDependencies';
-import { ProxyPatches }     from './resolveDependencies';
+import { DependencyNode } from '../index';
+import { StrictGraph } from '../index';
+import { GraphLookup } from '../index';
+import { Result } from '../index';
+import ensureStrictGraph from './ensureStrictGraph';
+import { StringIndexable } from './objects';
+import proxify from './proxify';
+import { Proxify } from './proxify';
+import { ProxyPatches } from './resolveDependencies';
+import resolveDependencies from './resolveDependencies';
+import resultFactory from './resultFactory';
+import strictGraphToTree from './strictGraphToTree';
 
-export type HandleCircular = Proxify | false
+export type HandleCircular = Proxify | false;
 
-export type Options = {
+export interface Options {
   failOnClobber: boolean;
   handleCircular: HandleCircular;
   postProcess: (node: DependencyNode, value: any) => any;
 }
 
-export type TreeNode = {
+export interface TreeNode {
   name: string;
   children: TreeNode[];
-};
+}
 
 export type OnFulfill = ((some: any) => any) | undefined;
 export type OnReject = (some: any) => any;
-export type KeyedResult = { [key: string]: any };
+export interface KeyedResult { [key: string]: any; }
 
-export type Container = {
-  merge(otherGraph: LooseGraph): Result<Container>;
+export interface Container {
+  merge(otherGraph: StringIndexable): Result<Container>;
   mergeStrict(otherGraph: StrictGraph): Result<Container>;
   get(key: string): Promise<any>;
   getSome(...keys: string[]): Promise<KeyedResult>;
@@ -52,7 +52,7 @@ function patchCircular(
   handleCircular: HandleCircular,
   proxyPatches: ProxyPatches) {
 
-  const proxyPatchPromises: Promise<any>[] = [];
+  const proxyPatchPromises: Array<Promise<any>> = [];
 
   // If resolving circular dependencies, set all of the proxies to their respective correct values
   if (handleCircular && proxyPatches.length) {
@@ -87,7 +87,7 @@ export default function containerFactory(
   const lookup: GraphLookup = graphLookup ? new Map(graphLookup) : new Map();
 
   const container: Container = {
-    merge(otherGraph: LooseGraph) {
+    merge(otherGraph: StringIndexable) {
       const strictGraph = ensureStrictGraph(otherGraph);
       return container.mergeStrict(strictGraph);
     },
@@ -165,7 +165,7 @@ export default function containerFactory(
     },
     getSome(...keys) {
       const mappedValues = {};
-      const promises: Promise<any>[] = [];
+      const promises: Array<Promise<any>> = [];
 
       for (const key of keys) {
         const promise = container

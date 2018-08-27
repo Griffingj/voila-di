@@ -1,16 +1,17 @@
-import { Declaration }  from '../index';
-import { LooseGraph }   from '../index';
-import { StrictGraph }  from '../index';
+import { Declaration } from '../index';
+import { StrictGraph } from '../index';
+import { CommonFunction } from './functions';
 import functionToParams from './functionToParams';
+import { StringIndexable } from './objects';
 
-function parseFunc(func: Function): Declaration {
+function parseFunc(func: CommonFunction): Declaration {
   return {
     dependencies: functionToParams(func),
     provider: func,
   };
 }
 
-export default function ensureStrictGraph(graph: LooseGraph): StrictGraph {
+export default function ensureStrictGraph(graph: StringIndexable): StrictGraph {
   const strictGraph: StrictGraph = {};
   const keys = Object.keys(graph);
 

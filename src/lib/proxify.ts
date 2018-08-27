@@ -1,7 +1,7 @@
-import { Result }    from '../index';
+import { Result } from '../index';
 import resultFactory from './resultFactory';
 
-export type ProxyController = {
+export interface ProxyController {
   proxy: any;
   setProxyTarget(target: any): Result<null>;
 }
@@ -39,4 +39,4 @@ export default function proxify(something: any): ProxyController {
       });
     }
   };
-};
+}

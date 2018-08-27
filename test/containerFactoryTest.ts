@@ -1,10 +1,10 @@
-import { spy }           from 'sinon';
-import { mock }          from 'sinon';
-import { script }        from 'lab';
-import { expect }        from 'chai';
-import looseFactory      from '../src/index';
+import { expect } from 'chai';
+import { script } from 'lab';
+import { spy } from 'sinon';
+import { mock } from 'sinon';
+import looseFactory from '../src/index';
 import { strictFactory } from '../src/index';
-import * as Fixtures     from './fixtures';
+import * as Fixtures from './fixtures';
 
 export const lab = script();
 const { describe, it } = lab;

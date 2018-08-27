@@ -1,7 +1,7 @@
-import { script }        from 'lab';
-import { expect }        from 'chai';
+import { expect } from 'chai';
+import { script } from 'lab';
 import ensureStrictGraph from '../src/lib/ensureStrictGraph';
-import * as Fixtures     from './fixtures';
+import * as Fixtures from './fixtures';
 
 export const lab = script();
 const { describe, it } = lab;

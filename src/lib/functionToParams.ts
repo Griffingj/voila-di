@@ -1,8 +1,10 @@
+import { CommonFunction } from './functions';
+
 const signatureRegExp = /^[^(]*\(([^)]*)\)/;
 const commentRegExp = /\/\*[\s\S]*?\*\/|\/\/.*/g;
 const paramRegExp = /([^\s,{=]+)/;
 
-export default function functionToParams(func: Function): string[] {
+export default function functionToParams(func: CommonFunction): string[] {
   const signature = func.toString()
     .replace(commentRegExp, '')
     .match(signatureRegExp);

@@ -1,5 +1,5 @@
-import { script } from 'lab';
 import { expect } from 'chai';
+import { script } from 'lab';
 import makeSinglyLinkedList from '../src/lib/singlyLinkedList';
 
 export const lab = script() as any;

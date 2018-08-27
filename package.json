@@ -16,26 +16,22 @@
   "scripts": {
     "lint": "tslint --project . --format msbuild",
     "prepare": "tsc --pretty",
-    "report-cov": "lab --coverage -r lcov | codeclimate-test-reporter",
-    "start": "ts-node ./src/main.ts",
     "test": "lab",
     "test-cov": "lab --coverage",
     "typecheck": "tsc --pretty --noEmit",
     "validate": "npm ls"
   },
   "devDependencies": {
-    "@types/chai": "^3.4.34",
+    "@types/chai": "^4.1.4",
     "@types/lab": "^11.1.0",
-    "@types/node": "^6.0.110",
-    "@types/sinon": "^1.16.31",
-    "chai": "^3.5.0",
-    "codeclimate-test-reporter": "^0.5.0",
-    "git-validate": "^2.2.1",
-    "lab": "^15.4.4",
-    "sinon": "^1.17.6",
-    "ts-node": "^1.7.2",
-    "tslint": "^3.15.1",
-    "typescript": "^2.8.3"
+    "@types/node": "^10.9.2",
+    "@types/sinon": "^5.0.1",
+    "chai": "^4.1.2",
+    "git-validate": "^2.2.4",
+    "lab": "^16.0.0",
+    "sinon": "^6.1.5",
+    "tslint": "^5.11.0",
+    "typescript": "^3.0.1"
   },
   "pre-commit": [
     "test",

@@ -1,7 +1,0 @@
-ratings:
-   paths:
-   - "src/**/*"
-
-engines:
-  tslint:beta:
-    enabled: true

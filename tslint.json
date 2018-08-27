@@ -9,6 +9,9 @@
      "one-line": [false],
      "no-conditional-assignment": false,
      "switch-default": false,
-     "align": false
+     "interface-name": false,
+     "arrow-parens": false,
+     "align": false,
+     "no-unused-expression": false
   }
 }

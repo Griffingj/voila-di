@@ -1,8 +1,11 @@
 # Voilà, Dependency Injection
-[![Build Status](https://travis-ci.org/Griffingj/voila-di.svg?branch=master)](https://travis-ci.org/Griffingj/voila-di)
-[![Test Coverage](https://codeclimate.com/github/Griffingj/voila-di/badges/coverage.svg)](https://codeclimate.com/github/Griffingj/voila-di/coverage)
+A dependency injection library for async utility, modularity, and testability  
 
-A dependency injection library for async utility, modularity, and testability
+[![Build Status](https://travis-ci.org/Griffingj/voila-di.svg?branch=master)](https://travis-ci.org/Griffingj/voila-di)
+
+[![NPM](https://nodei.co/npm/voila-di.png?downloads=true)](https://nodei.co/npm/voila-di/)  
+
+## Usage
 
 Create the dependency injection container
 
